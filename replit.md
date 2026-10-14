@@ -1,6 +1,6 @@
-# [Project name]
+# UPSC 2028 & SPIPA 2027 Command Center
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An owner-only study and lifestyle command center for UPSC CSE 2028 and SPIPA 2027 preparation, with Notion and Google Calendar connections.
 
 ## Run & Operate
 
@@ -22,23 +22,32 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/upsc-command-center/` — React dashboard, voice manager, analytics, sprint, calendar, wellness, and settings UI
+- `artifacts/api-server/src/routes/` — Express API routes for study, sprint, wellness, Notion, and Google Calendar
+- `lib/api-spec/openapi.yaml` — API contract source of truth; regenerate clients with the codegen command above
+- `lib/api-client-react/src/generated/` — generated typed React Query client
+- `lib/db/src/schema/` — Drizzle schema for user-scoped study, sprint, wellness, and settings records
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The app is restricted to one owner because Notion and Google Calendar connectors are attached to the project, not individual app accounts.
+- Server routes verify both the Clerk session and the configured `UPSC_ALLOWED_EMAIL`; the browser allowlist only controls presentation.
+- Notion and Google Calendar requests go through Replit-managed connector proxies so OAuth tokens remain server-side.
+- Study and wellness dates use `Asia/Kolkata`; date-only records are stored without timezone shifts.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The command center includes an exam countdown and daily quote, Aira voice/text study commands, a 15-day sprint, study analytics, free-slot discovery, health and meal tracking, Notion task/schedule views, and Google Calendar synchronization.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Executive light theme with `#F8FAFC` background, white cards, royal blue `#1E3A8A`, gold `#D97706`, and an Ashoka Lion Capital motif.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Configure `UPSC_ALLOWED_EMAIL` and the matching `VITE_UPSC_ALLOWED_EMAIL` before opening the app.
+- Select shared Notion task and schedule databases in Settings before using the Notion views or automated sync.
+- Calendar event writes and the bidirectional sync operate on the connected owner's Google Calendar.
 
 ## Pointers
 

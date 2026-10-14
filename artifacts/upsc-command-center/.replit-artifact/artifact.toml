@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "UPSC Command Center"
+description = "A private study and lifestyle command center for managing UPSC 2028 and SPIPA 2027 preparation, study analytics, health habits, Notion tasks, and Google Calendar scheduling."
+version = "1.0.0"
+id = "artifacts/upsc-command-center"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22444
+
+[services.development]
+run = "pnpm --filter @workspace/upsc-command-center run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/upsc-command-center", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/upsc-command-center/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22444"
+BASE_PATH = "/"

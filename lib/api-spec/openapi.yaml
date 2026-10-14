@@ -3,13 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: UPSC 2028 and SPIPA 2027 study and lifestyle command center
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Study dashboard summary
+  - name: study
+    description: Study logs and 15-day sprint
+  - name: wellness
+    description: Health and lifestyle tracking
+  - name: settings
+    description: Personal command center settings
+  - name: notion
+    description: Notion tasks and schedule proxy
+  - name: calendar
+    description: Google Calendar and availability
 paths:
   /healthz:
     get:
@@ -24,13 +36,554 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get today's study and wellness summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /study-logs:
+    get:
+      operationId: getStudyLogs
+      tags: [study]
+      summary: List recent study sessions
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+            default: 14
+      responses:
+        "200":
+          description: Study sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudyLog"
+    post:
+      operationId: createStudyLog
+      tags: [study]
+      summary: Record a study session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyLogInput"
+      responses:
+        "201":
+          description: Study session recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyLog"
+  /sprint-tasks:
+    get:
+      operationId: getSprintTasks
+      tags: [study]
+      summary: Get the current 15-day sprint
+      responses:
+        "200":
+          description: Sprint tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SprintTask"
+    post:
+      operationId: createSprintTask
+      tags: [study]
+      summary: Add a target to the sprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SprintTaskInput"
+      responses:
+        "201":
+          description: Sprint task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SprintTask"
+  /sprint-tasks/{id}:
+    patch:
+      operationId: updateSprintTask
+      tags: [study]
+      summary: Update a sprint target
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SprintTaskUpdate"
+      responses:
+        "200":
+          description: Updated sprint task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SprintTask"
+        "404":
+          description: Sprint task not found
+  /health-logs:
+    get:
+      operationId: getHealthLogs
+      tags: [wellness]
+      summary: List recent daily health records
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+      responses:
+        "200":
+          description: Daily health records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealthLog"
+    post:
+      operationId: saveHealthLog
+      tags: [wellness]
+      summary: Save or update today's health record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HealthLogInput"
+      responses:
+        "200":
+          description: Saved daily health record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthLog"
+  /meal-logs:
+    get:
+      operationId: getMealLogs
+      tags: [wellness]
+      summary: List meals for a date
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Meal records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MealLog"
+    post:
+      operationId: createMealLog
+      tags: [wellness]
+      summary: Log a meal and its calories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MealLogInput"
+      responses:
+        "201":
+          description: Meal recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealLog"
+  /meal-logs/{id}:
+    delete:
+      operationId: deleteMealLog
+      tags: [wellness]
+      summary: Remove a meal record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Meal removed
+        "404":
+          description: Meal not found
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get command center preferences
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update command center preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppSettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+  /notion/databases:
+    get:
+      operationId: getNotionDatabases
+      tags: [notion]
+      summary: Find databases shared with the Notion connection
+      responses:
+        "200":
+          description: Shared Notion databases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotionDatabase"
+  /notion/tasks:
+    get:
+      operationId: getNotionTasks
+      tags: [notion]
+      summary: Query tasks from the selected Notion database
+      responses:
+        "200":
+          description: Notion tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotionItem"
+    post:
+      operationId: createNotionTask
+      tags: [notion]
+      summary: Create a task in the selected Notion database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotionTaskInput"
+      responses:
+        "201":
+          description: Created Notion task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionItem"
+  /notion/schedule:
+    get:
+      operationId: getNotionSchedule
+      tags: [notion]
+      summary: Query schedule entries from the selected Notion database
+      responses:
+        "200":
+          description: Notion schedule
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotionItem"
+  /calendar/events:
+    get:
+      operationId: getCalendarEvents
+      tags: [calendar]
+      summary: List upcoming Google Calendar events
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+            default: 14
+      responses:
+        "200":
+          description: Upcoming calendar events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalendarEvent"
+    post:
+      operationId: createCalendarEvent
+      tags: [calendar]
+      summary: Add an event to Google Calendar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarEventInput"
+      responses:
+        "201":
+          description: Created calendar event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+  /calendar/free-slots:
+    get:
+      operationId: getFreeSlots
+      tags: [calendar]
+      summary: Find open time blocks over the next several days
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 14
+            default: 7
+      responses:
+        "200":
+          description: Available blocks in Asia/Kolkata time
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FreeSlot"
+  /calendar/sync:
+    post:
+      operationId: syncNotionAndCalendar
+      tags: [calendar, notion]
+      summary: Reconcile Notion task dates and linked Google Calendar events
+      responses:
+        "200":
+          description: Synchronization results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncSummary"
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
+    DashboardSummary:
+      type: object
+      required: [date, studyMinutesToday, studyTargetMinutes, studyStreak, waterMl, waterGoalMl, sleepHours, weightKg, mealCalories]
+      properties:
+        date: { type: string, format: date }
+        studyMinutesToday: { type: integer }
+        studyTargetMinutes: { type: integer }
+        studyStreak: { type: integer }
+        waterMl: { type: integer }
+        waterGoalMl: { type: integer }
+        sleepHours: { type: ["number", "null"] }
+        weightKg: { type: ["number", "null"] }
+        mealCalories: { type: integer }
+    StudyLog:
+      type: object
+      required: [id, date, subject, durationMinutes, notes, createdAt]
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date }
+        subject: { type: string }
+        durationMinutes: { type: integer }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    StudyLogInput:
+      type: object
+      required: [date, subject, durationMinutes]
+      properties:
+        date: { type: string, format: date }
+        subject: { type: string, minLength: 1, maxLength: 120 }
+        durationMinutes: { type: integer, minimum: 1, maximum: 1440 }
+        notes: { type: string, maxLength: 1000 }
+    SprintTask:
+      type: object
+      required: [id, dayNumber, title, subject, target, completed, priority]
+      properties:
+        id: { type: integer }
+        dayNumber: { type: integer, minimum: 1, maximum: 15 }
+        title: { type: string }
+        subject: { type: string }
+        target: { type: string }
+        completed: { type: boolean }
+        priority: { type: string, enum: [high, medium, low] }
+    SprintTaskInput:
+      type: object
+      required: [dayNumber, title, subject, target, priority]
+      properties:
+        dayNumber: { type: integer, minimum: 1, maximum: 15 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        subject: { type: string, minLength: 1, maxLength: 120 }
+        target: { type: string, minLength: 1, maxLength: 500 }
+        priority: { type: string, enum: [high, medium, low] }
+    SprintTaskUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        completed: { type: boolean }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        subject: { type: string, minLength: 1, maxLength: 120 }
+        target: { type: string, minLength: 1, maxLength: 500 }
+        priority: { type: string, enum: [high, medium, low] }
+    HealthLog:
+      type: object
+      required: [id, date, weightKg, waterMl, sleepHours]
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date }
+        weightKg: { type: ["number", "null"] }
+        waterMl: { type: integer }
+        sleepHours: { type: ["number", "null"] }
+    HealthLogInput:
+      type: object
+      required: [date]
+      minProperties: 2
+      properties:
+        date: { type: string, format: date }
+        weightKg: { type: ["number", "null"], minimum: 20, maximum: 400 }
+        waterMl: { type: integer, minimum: 0, maximum: 20000 }
+        sleepHours: { type: ["number", "null"], minimum: 0, maximum: 24 }
+    MealLog:
+      type: object
+      required: [id, date, name, calories, mealType, createdAt]
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date }
+        name: { type: string }
+        calories: { type: integer }
+        mealType: { type: string, enum: [breakfast, lunch, dinner, snack] }
+        createdAt: { type: string, format: date-time }
+    MealLogInput:
+      type: object
+      required: [date, name, calories, mealType]
+      properties:
+        date: { type: string, format: date }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        calories: { type: integer, minimum: 0, maximum: 10000 }
+        mealType: { type: string, enum: [breakfast, lunch, dinner, snack] }
+    AppSettings:
+      type: object
+      required: [dailyStudyTargetMinutes, waterGoalMl, sleepGoalHours, notionTasksDatabaseId, notionScheduleDatabaseId, calendarId, dayStartHour, dayEndHour, spipaExamDate, upscPrelimsDate]
+      properties:
+        dailyStudyTargetMinutes: { type: integer }
+        waterGoalMl: { type: integer }
+        sleepGoalHours: { type: number }
+        notionTasksDatabaseId: { type: ["string", "null"] }
+        notionScheduleDatabaseId: { type: ["string", "null"] }
+        calendarId: { type: string }
+        dayStartHour: { type: integer }
+        dayEndHour: { type: integer }
+        spipaExamDate: { type: string, format: date }
+        upscPrelimsDate: { type: string, format: date }
+    AppSettingsUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        dailyStudyTargetMinutes: { type: integer, minimum: 15, maximum: 1440 }
+        waterGoalMl: { type: integer, minimum: 250, maximum: 12000 }
+        sleepGoalHours: { type: number, minimum: 1, maximum: 24 }
+        notionTasksDatabaseId: { type: ["string", "null"] }
+        notionScheduleDatabaseId: { type: ["string", "null"] }
+        calendarId: { type: string, minLength: 1 }
+        dayStartHour: { type: integer, minimum: 0, maximum: 23 }
+        dayEndHour: { type: integer, minimum: 1, maximum: 24 }
+        spipaExamDate: { type: string, format: date }
+        upscPrelimsDate: { type: string, format: date }
+    NotionDatabase:
+      type: object
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+    NotionItem:
+      type: object
+      required: [id, title, dueDate, status, url, lastEditedTime]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        dueDate: { type: ["string", "null"], format: date-time }
+        status: { type: ["string", "null"] }
+        url: { type: string }
+        lastEditedTime: { type: string, format: date-time }
+    NotionTaskInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        dueDate: { type: ["string", "null"], format: date-time }
+        status: { type: string, maxLength: 80 }
+    CalendarEvent:
+      type: object
+      required: [id, title, start, end, allDay, description]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        allDay: { type: boolean }
+        description: { type: ["string", "null"] }
+    CalendarEventInput:
+      type: object
+      required: [title, start, end]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        description: { type: string, maxLength: 1000 }
+    FreeSlot:
+      type: object
+      required: [start, end, durationMinutes]
+      properties:
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        durationMinutes: { type: integer }
+    SyncSummary:
+      type: object
+      required: [notionToCalendarCreated, notionToCalendarUpdated, calendarToNotionUpdated, unchanged, message]
+      properties:
+        notionToCalendarCreated: { type: integer }
+        notionToCalendarUpdated: { type: integer }
+        calendarToNotionUpdated: { type: integer }
+        unchanged: { type: integer }
+        message: { type: string }
 
