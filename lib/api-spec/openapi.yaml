@@ -15,7 +15,11 @@ tags:
   - name: study
     description: Study logs and 15-day sprint
   - name: wellness
-    description: Health and lifestyle tracking
+    description: Health, fitness, and lifestyle tracking
+  - name: habits
+    description: Daily habit tracking
+  - name: subjects
+    description: Long-term subject and topic planning
   - name: settings
     description: Personal command center settings
   - name: notion
@@ -236,6 +240,241 @@ paths:
           description: Meal removed
         "404":
           description: Meal not found
+  /workout-logs:
+    get:
+      operationId: getWorkoutLogs
+      tags: [wellness]
+      summary: List workout records
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+            default: 7
+      responses:
+        "200":
+          description: Workout records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkoutLog"
+    post:
+      operationId: createWorkoutLog
+      tags: [wellness]
+      summary: Record a workout set block
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkoutLogInput"
+      responses:
+        "201":
+          description: Workout recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkoutLog"
+  /habits:
+    get:
+      operationId: getHabits
+      tags: [habits]
+      summary: Get habits and recent daily check-ins
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 31
+            default: 30
+      responses:
+        "200":
+          description: Habit list and check-in history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HabitDashboard"
+    post:
+      operationId: createHabit
+      tags: [habits]
+      summary: Create a good or bad habit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HabitInput"
+      responses:
+        "201":
+          description: Habit created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Habit"
+        "409":
+          description: The 20-habit limit has been reached
+  /habits/{id}:
+    patch:
+      operationId: updateHabit
+      tags: [habits]
+      summary: Edit or archive a habit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HabitUpdate"
+      responses:
+        "200":
+          description: Updated habit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Habit"
+        "404":
+          description: Habit not found
+  /habit-checkins:
+    post:
+      operationId: saveHabitCheckin
+      tags: [habits]
+      summary: Save a daily habit check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HabitCheckinInput"
+      responses:
+        "200":
+          description: Saved daily check-in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HabitCheckin"
+  /subjects:
+    get:
+      operationId: getSubjects
+      tags: [subjects]
+      summary: List long-term subject modules and topic checklists
+      responses:
+        "200":
+          description: Subject modules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubjectModule"
+    post:
+      operationId: createSubject
+      tags: [subjects]
+      summary: Add a future subject module
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectModuleInput"
+      responses:
+        "201":
+          description: Subject module created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubjectModule"
+  /subjects/{id}:
+    patch:
+      operationId: updateSubject
+      tags: [subjects]
+      summary: Update a subject module
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectModuleUpdate"
+      responses:
+        "200":
+          description: Updated subject module
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubjectModule"
+        "404":
+          description: Subject module not found
+  /subject-topics:
+    post:
+      operationId: createSubjectTopic
+      tags: [subjects]
+      summary: Add a topic to a subject module
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectTopicInput"
+      responses:
+        "201":
+          description: Topic created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubjectTopic"
+  /subject-topics/{id}:
+    patch:
+      operationId: updateSubjectTopic
+      tags: [subjects]
+      summary: Update or complete a topic
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectTopicUpdate"
+      responses:
+        "200":
+          description: Updated topic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubjectTopic"
+        "404":
+          description: Topic not found
+  /subjects/auto-schedule:
+    post:
+      operationId: autoScheduleSubjects
+      tags: [subjects, calendar]
+      summary: Allocate unassigned future topics to open Google Calendar slots
+      responses:
+        "200":
+          description: Topic scheduling result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutoScheduleResponse"
   /settings:
     get:
       operationId: getSettings
@@ -407,7 +646,7 @@ components:
           type: string
     DashboardSummary:
       type: object
-      required: [date, studyMinutesToday, studyTargetMinutes, studyStreak, waterMl, waterGoalMl, sleepHours, weightKg, mealCalories]
+      required: [date, studyMinutesToday, studyTargetMinutes, studyStreak, waterMl, waterGoalMl, sleepHours, weightKg, mealCalories, steps, stepGoal]
       properties:
         date: { type: string, format: date }
         studyMinutesToday: { type: integer }
@@ -418,6 +657,8 @@ components:
         sleepHours: { type: ["number", "null"] }
         weightKg: { type: ["number", "null"] }
         mealCalories: { type: integer }
+        steps: { type: integer }
+        stepGoal: { type: integer }
     StudyLog:
       type: object
       required: [id, date, subject, durationMinutes, notes, createdAt]
@@ -467,13 +708,14 @@ components:
         priority: { type: string, enum: [high, medium, low] }
     HealthLog:
       type: object
-      required: [id, date, weightKg, waterMl, sleepHours]
+      required: [id, date, weightKg, waterMl, sleepHours, steps]
       properties:
         id: { type: integer }
         date: { type: string, format: date }
         weightKg: { type: ["number", "null"] }
         waterMl: { type: integer }
         sleepHours: { type: ["number", "null"] }
+        steps: { type: integer }
     HealthLogInput:
       type: object
       required: [date]
@@ -483,6 +725,7 @@ components:
         weightKg: { type: ["number", "null"], minimum: 20, maximum: 400 }
         waterMl: { type: integer, minimum: 0, maximum: 20000 }
         sleepHours: { type: ["number", "null"], minimum: 0, maximum: 24 }
+        steps: { type: integer, minimum: 0, maximum: 100000 }
     MealLog:
       type: object
       required: [id, date, name, calories, mealType, createdAt]
@@ -501,9 +744,161 @@ components:
         name: { type: string, minLength: 1, maxLength: 120 }
         calories: { type: integer, minimum: 0, maximum: 10000 }
         mealType: { type: string, enum: [breakfast, lunch, dinner, snack] }
+    WorkoutLog:
+      type: object
+      required: [id, date, exerciseName, sets, repsPerSet, weightPerSet, weightUnit, createdAt]
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date }
+        exerciseName: { type: string }
+        sets: { type: integer }
+        repsPerSet: { type: integer }
+        weightPerSet: { type: number }
+        weightUnit: { type: string, enum: [kg, lbs] }
+        createdAt: { type: string, format: date-time }
+    WorkoutLogInput:
+      type: object
+      required: [date, exerciseName, sets, repsPerSet, weightPerSet, weightUnit]
+      properties:
+        date: { type: string, format: date }
+        exerciseName: { type: string, minLength: 1, maxLength: 120 }
+        sets: { type: integer, minimum: 1, maximum: 50 }
+        repsPerSet: { type: integer, minimum: 1, maximum: 500 }
+        weightPerSet: { type: number, minimum: 0, maximum: 2000 }
+        weightUnit: { type: string, enum: [kg, lbs] }
+    Habit:
+      type: object
+      required: [id, name, category, description, active, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        category: { type: string, enum: [good, bad] }
+        description: { type: ["string", "null"] }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    HabitInput:
+      type: object
+      required: [name, category]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        category: { type: string, enum: [good, bad] }
+        description: { type: string, maxLength: 500 }
+    HabitUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        category: { type: string, enum: [good, bad] }
+        description: { type: ["string", "null"], maxLength: 500 }
+        active: { type: boolean }
+    HabitCheckin:
+      type: object
+      required: [id, habitId, date, completed]
+      properties:
+        id: { type: integer }
+        habitId: { type: integer }
+        date: { type: string, format: date }
+        completed: { type: boolean }
+    HabitCheckinInput:
+      type: object
+      required: [habitId, date, completed]
+      properties:
+        habitId: { type: integer }
+        date: { type: string, format: date }
+        completed: { type: boolean }
+    HabitDashboard:
+      type: object
+      required: [habits, checkins]
+      properties:
+        habits:
+          type: array
+          items:
+            $ref: "#/components/schemas/Habit"
+        checkins:
+          type: array
+          items:
+            $ref: "#/components/schemas/HabitCheckin"
+    SubjectTopic:
+      type: object
+      required: [id, moduleId, title, completed, estimatedHours]
+      properties:
+        id: { type: integer }
+        moduleId: { type: integer }
+        title: { type: string }
+        completed: { type: boolean }
+        estimatedHours: { type: ["number", "null"] }
+    SubjectModule:
+      type: object
+      required: [id, title, startDate, endDate, estimatedHours, status, topics]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        estimatedHours: { type: number }
+        status: { type: string, enum: [planned, in-progress, complete] }
+        topics:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectTopic"
+    SubjectModuleInput:
+      type: object
+      required: [title, startDate, endDate, estimatedHours]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 160 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        estimatedHours: { type: number, minimum: 1, maximum: 2000 }
+        topics:
+          type: array
+          maxItems: 100
+          items: { type: string, minLength: 1, maxLength: 200 }
+    SubjectModuleUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        title: { type: string, minLength: 1, maxLength: 160 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        estimatedHours: { type: number, minimum: 1, maximum: 2000 }
+        status: { type: string, enum: [planned, in-progress, complete] }
+    SubjectTopicInput:
+      type: object
+      required: [moduleId, title]
+      properties:
+        moduleId: { type: integer }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        estimatedHours: { type: ["number", "null"], minimum: 0.25, maximum: 100 }
+    SubjectTopicUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        completed: { type: boolean }
+        estimatedHours: { type: ["number", "null"], minimum: 0.25, maximum: 100 }
+    AutoScheduleAssignment:
+      type: object
+      required: [topicId, topicTitle, subjectTitle, eventId, start, end]
+      properties:
+        topicId: { type: integer }
+        topicTitle: { type: string }
+        subjectTitle: { type: string }
+        eventId: { type: string }
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+    AutoScheduleResponse:
+      type: object
+      required: [createdEvents, assignments, message]
+      properties:
+        createdEvents: { type: integer }
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AutoScheduleAssignment"
+        message: { type: string }
     AppSettings:
       type: object
-      required: [dailyStudyTargetMinutes, waterGoalMl, sleepGoalHours, notionTasksDatabaseId, notionScheduleDatabaseId, calendarId, dayStartHour, dayEndHour, spipaExamDate, upscPrelimsDate]
+      required: [dailyStudyTargetMinutes, waterGoalMl, sleepGoalHours, notionTasksDatabaseId, notionScheduleDatabaseId, calendarId, dayStartHour, dayEndHour, spipaExamDate, upscPrelimsDate, stepGoal]
       properties:
         dailyStudyTargetMinutes: { type: integer }
         waterGoalMl: { type: integer }
@@ -515,6 +910,7 @@ components:
         dayEndHour: { type: integer }
         spipaExamDate: { type: string, format: date }
         upscPrelimsDate: { type: string, format: date }
+        stepGoal: { type: integer }
     AppSettingsUpdate:
       type: object
       minProperties: 1
@@ -529,6 +925,7 @@ components:
         dayEndHour: { type: integer, minimum: 1, maximum: 24 }
         spipaExamDate: { type: string, format: date }
         upscPrelimsDate: { type: string, format: date }
+        stepGoal: { type: integer, minimum: 1000, maximum: 100000 }
     NotionDatabase:
       type: object
       required: [id, title]

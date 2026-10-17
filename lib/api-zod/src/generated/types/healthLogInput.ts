@@ -25,4 +25,9 @@ export interface HealthLogInput {
      * @nullable
      */
   sleepHours?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     */
+  steps?: number;
 }

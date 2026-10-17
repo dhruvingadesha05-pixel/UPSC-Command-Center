@@ -1,25 +1,213 @@
-import { Link } from "wouter";
-import { useEffect, useState } from "react";
 import { ArrowRight, CalendarClock, ShieldCheck, Sparkles } from "lucide-react";
 import { Show } from "@clerk/react";
-import { LionMark, daysUntil } from "@/lib/shared";
+import { Link } from "wouter";
+import { CountdownTimer } from "@/components/CountdownTimer";
+import { LionMark } from "@/lib/shared";
 
-const quote = ["Discipline is choosing between what you want now and what you want most.", "A little progress each day adds up to big results.", "The secret of getting ahead is getting started."][Math.floor(Date.now() / 86400000) % 3];
+const quote = [
+  "Discipline is choosing between what you want now and what you want most.",
+  "A little progress each day adds up to big results.",
+  "The secret of getting ahead is getting started.",
+][Math.floor(Date.now() / 86400000) % 3];
 
 export function Home() {
-  const [, setClock] = useState(Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setClock(Date.now()), 60000);
-    return () => window.clearInterval(timer);
-  }, []);
-  return <div className="min-h-[100dvh] overflow-hidden bg-[#F8FAFC] text-slate-900">
-    <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6"><Link href="/" className="flex items-center gap-3 text-[#1E3A8A]" data-testid="link-home-brand"><LionMark className="h-10 w-10"/><span className="font-serif text-sm font-extrabold tracking-tight">UPSC COMMAND CENTER</span></Link><div className="flex items-center gap-3"><Show when="signed-out"><Link href="/sign-in" className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" data-testid="link-sign-in">Sign in</Link><Link href="/sign-up" className="rounded-xl bg-[#1E3A8A] px-4 py-2.5 text-sm font-semibold text-white" data-testid="link-sign-up">Create account</Link></Show><Show when="signed-in"><Link href="/dashboard" className="rounded-xl bg-[#1E3A8A] px-4 py-2.5 text-sm font-semibold text-white" data-testid="link-open-dashboard">Open dashboard</Link></Show></div></header>
-    <main className="mx-auto max-w-7xl px-6">
-      <section className="grid min-h-[620px] items-center gap-12 py-14 lg:grid-cols-[1.05fr_.95fr] lg:py-20"><div className="fade-up"><div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.16em] text-blue-900"><span className="h-2 w-2 rounded-full bg-amber-500"/> A private operating space for one aspirant</div><h1 className="mt-7 max-w-2xl font-serif text-5xl font-extrabold leading-[1.04] tracking-[-.045em] text-[#14264A] md:text-7xl">Make your days<br/>count toward <span className="text-[#1E3A8A]">service.</span></h1><p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">One clear view of preparation, health, and the hours still available. Built for the long road to UPSC CSE 2028 and SPIPA 2027.</p><div className="mt-8 flex flex-wrap gap-3"><Show when="signed-out"><Link href="/sign-up" className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-6 py-3.5 font-semibold text-white shadow-lg shadow-blue-950/10 transition hover:-translate-y-0.5" data-testid="link-start"><span>Enter your command center</span><ArrowRight size={17}/></Link><Link href="/sign-in" className="rounded-xl border border-slate-200 bg-white px-6 py-3.5 font-semibold text-slate-700" data-testid="link-returning">I already have an account</Link></Show><Show when="signed-in"><Link href="/dashboard" className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-6 py-3.5 font-semibold text-white" data-testid="link-start-dashboard">Continue to overview<ArrowRight size={17}/></Link></Show></div><div className="mt-10 flex items-center gap-3 text-sm text-slate-500"><ShieldCheck size={17} className="text-emerald-700"/>Private by design. Your schedule, your pace.</div></div>
-        <div className="relative"><div className="absolute -right-6 -top-8 h-52 w-52 rounded-full bg-amber-100/70 blur-3xl"/><div className="relative rounded-[2rem] border border-blue-100 bg-white p-6 shadow-[0_24px_70px_rgba(30,58,138,.12)] md:p-8"><div className="flex items-center justify-between border-b border-slate-100 pb-5"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-slate-400">Your next milestones</p><p className="mt-1 font-serif text-xl font-bold text-slate-900">The work is today.</p></div><Sparkles className="text-amber-600" size={21}/></div><div className="grid grid-cols-2 gap-4 py-6"><div className="rounded-2xl bg-[#F2F6FC] p-5"><p className="font-mono text-[10px] uppercase tracking-[.12em] text-blue-900">SPIPA 2027 entrance</p><p className="mt-3 font-serif text-4xl font-extrabold text-[#1E3A8A]" data-testid="countdown-spipa">{daysUntil("2027-05-16")}<span className="ml-1 text-sm font-medium text-slate-500">days</span></p><p className="mt-2 text-[10px] text-slate-500">Estimated date · configurable</p></div><div className="rounded-2xl bg-[#FFF8EB] p-5"><p className="font-mono text-[10px] uppercase tracking-[.12em] text-amber-800">CSE prelims 2028</p><p className="mt-3 font-serif text-4xl font-extrabold text-amber-700" data-testid="countdown-upsc">{daysUntil("2028-05-28")}<span className="ml-1 text-sm font-medium text-slate-500">days</span></p><p className="mt-2 text-[10px] text-slate-500">Estimated date · configurable</p></div></div><div className="rounded-xl border border-slate-100 px-5 py-4"><div className="flex items-center gap-2 text-xs font-semibold text-slate-700"><CalendarClock size={15} className="text-blue-800"/>An intentional day, not a perfect one</div><p className="mt-2 font-serif text-lg italic leading-7 text-slate-700">“{quote}”</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[.15em] text-slate-400">Daily reflection</p></div><div className="mt-5 flex items-center justify-between"><span className="font-mono text-[10px] tracking-[.16em] text-slate-400">PREP · WELLNESS · TIME</span><span className="h-2 w-14 rounded-full bg-amber-400"/></div></div></div></section>
-      <section className="grid gap-5 border-t border-slate-200 py-12 md:grid-cols-3"><div className="rounded-2xl bg-white p-6"><span className="font-mono text-xs text-amber-700">01 / PREPARE</span><h2 className="mt-3 font-serif text-xl font-bold">A plan you can finish.</h2><p className="mt-2 text-sm leading-6 text-slate-500">Turn backlog into a 15-day sprint, and make study hours visible without losing sight of consistency.</p></div><div className="rounded-2xl bg-white p-6"><span className="font-mono text-xs text-amber-700">02 / PROTECT</span><h2 className="mt-3 font-serif text-xl font-bold">Health belongs in the plan.</h2><p className="mt-2 text-sm leading-6 text-slate-500">Track the small daily signals—water, sleep, meals, and weight—alongside your academic work.</p></div><div className="rounded-2xl bg-white p-6"><span className="font-mono text-xs text-amber-700">03 / USE TIME</span><h2 className="mt-3 font-serif text-xl font-bold">Find the hours you have.</h2><p className="mt-2 text-sm leading-6 text-slate-500">Bring Notion plans and calendar commitments together, then make real free blocks count.</p></div></section>
-      <section className="mb-14 flex flex-col items-start justify-between gap-6 rounded-3xl bg-[#14264A] px-7 py-9 text-white md:flex-row md:items-center md:px-10"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-amber-300">Your ambition, made practical</p><h2 className="mt-3 max-w-xl font-serif text-3xl font-bold">The next meaningful step is already small enough.</h2></div><Link href="/sign-up" className="rounded-xl bg-amber-400 px-5 py-3 font-semibold text-[#14264A]" data-testid="link-final-signup">Set up your space</Link></section>
-    </main>
-    <footer className="border-t border-slate-200 px-6 py-6 text-center font-mono text-[10px] tracking-[.12em] text-slate-400">ESTIMATED EXAM DATES · CONFIGURABLE UNTIL OFFICIAL NOTIFICATION</footer>
-  </div>;
+  return (
+    <div className="min-h-[100dvh] overflow-hidden bg-[#F8FAFC] text-slate-900">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+        <Link
+          href="/"
+          className="flex items-center gap-3 text-[#1E3A8A]"
+          data-testid="link-home-brand"
+        >
+          <LionMark className="h-10 w-10" />
+          <span className="font-serif text-sm font-extrabold tracking-tight">
+            UPSC COMMAND CENTER
+          </span>
+        </Link>
+        <div className="flex items-center gap-3">
+          <Show when="signed-out">
+            <Link
+              href="/sign-in"
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              data-testid="link-sign-in"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/sign-up"
+              className="rounded-xl bg-[#1E3A8A] px-4 py-2.5 text-sm font-semibold text-white"
+              data-testid="link-sign-up"
+            >
+              Create account
+            </Link>
+          </Show>
+          <Show when="signed-in">
+            <Link
+              href="/dashboard"
+              className="rounded-xl bg-[#1E3A8A] px-4 py-2.5 text-sm font-semibold text-white"
+              data-testid="link-open-dashboard"
+            >
+              Open dashboard
+            </Link>
+          </Show>
+        </div>
+      </header>
+      <main className="mx-auto max-w-7xl px-6">
+        <section className="grid min-h-[620px] items-center gap-12 py-14 lg:grid-cols-[1.05fr_.95fr] lg:py-20">
+          <div className="fade-up">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.16em] text-blue-900">
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+              A private operating space for one aspirant
+            </div>
+            <h1 className="mt-7 max-w-2xl font-serif text-5xl font-extrabold leading-[1.04] tracking-[-.045em] text-[#14264A] md:text-7xl">
+              Make your days
+              <br />
+              count toward <span className="text-[#1E3A8A]">service.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
+              One clear view of preparation, health, and the hours still
+              available. Built for the long road to UPSC CSE 2028 and SPIPA
+              2027.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Show when="signed-out">
+                <Link
+                  href="/sign-up"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-6 py-3.5 font-semibold text-white shadow-lg shadow-blue-950/10 transition hover:-translate-y-0.5"
+                  data-testid="link-start"
+                >
+                  <span>Enter your command center</span>
+                  <ArrowRight size={17} />
+                </Link>
+                <Link
+                  href="/sign-in"
+                  className="rounded-xl border border-slate-200 bg-white px-6 py-3.5 font-semibold text-slate-700"
+                  data-testid="link-returning"
+                >
+                  I already have an account
+                </Link>
+              </Show>
+              <Show when="signed-in">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-6 py-3.5 font-semibold text-white"
+                  data-testid="link-start-dashboard"
+                >
+                  Continue to overview
+                  <ArrowRight size={17} />
+                </Link>
+              </Show>
+            </div>
+            <div className="mt-10 flex items-center gap-3 text-sm text-slate-500">
+              <ShieldCheck size={17} className="text-emerald-700" />
+              Private by design. Your schedule, your pace.
+            </div>
+          </div>
+          <div className="relative">
+            <div className="absolute -right-6 -top-8 h-52 w-52 rounded-full bg-amber-100/70 blur-3xl" />
+            <div className="relative rounded-[2rem] border border-blue-100 bg-white p-6 shadow-[0_24px_70px_rgba(30,58,138,.12)] md:p-8">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-5">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[.2em] text-slate-400">
+                    Your next milestones
+                  </p>
+                  <p className="mt-1 font-serif text-xl font-bold text-slate-900">
+                    The work is today.
+                  </p>
+                </div>
+                <Sparkles className="text-amber-600" size={21} />
+              </div>
+              <div className="grid grid-cols-1 gap-3 py-5 sm:grid-cols-2">
+                <CountdownTimer
+                  title="SPIPA 2027 entrance"
+                  targetDate="2027-05-16"
+                  tone="blue"
+                  testId="countdown-spipa"
+                />
+                <CountdownTimer
+                  title="CSE prelims 2028"
+                  targetDate="2028-05-28"
+                  tone="gold"
+                  testId="countdown-upsc"
+                />
+              </div>
+              <p className="mb-4 text-[10px] text-slate-500">
+                Estimated dates · sign in to update in Settings
+              </p>
+              <div className="rounded-xl border border-slate-100 px-5 py-4">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                  <CalendarClock size={15} className="text-blue-800" />
+                  An intentional day, not a perfect one
+                </div>
+                <p className="mt-2 font-serif text-lg italic leading-7 text-slate-700">
+                  “{quote}”
+                </p>
+                <p className="mt-2 font-mono text-[9px] uppercase tracking-[.15em] text-slate-400">
+                  Daily reflection
+                </p>
+              </div>
+              <div className="mt-5 flex items-center justify-between">
+                <span className="font-mono text-[10px] tracking-[.16em] text-slate-400">
+                  PREP · WELLNESS · TIME
+                </span>
+                <span className="h-2 w-14 rounded-full bg-amber-400" />
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="grid gap-5 border-t border-slate-200 py-12 md:grid-cols-3">
+          <div className="rounded-2xl bg-white p-6">
+            <span className="font-mono text-xs text-amber-700">01 / PREPARE</span>
+            <h2 className="mt-3 font-serif text-xl font-bold">
+              A plan you can finish.
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Turn backlog into a 15-day sprint, and make study hours visible
+              without losing sight of consistency.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white p-6">
+            <span className="font-mono text-xs text-amber-700">02 / PROTECT</span>
+            <h2 className="mt-3 font-serif text-xl font-bold">
+              Health belongs in the plan.
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Track workouts, steps, water, sleep, meals, and weight alongside
+              your academic work.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white p-6">
+            <span className="font-mono text-xs text-amber-700">03 / USE TIME</span>
+            <h2 className="mt-3 font-serif text-xl font-bold">
+              Find the hours you have.
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Bring long-term subjects, Notion plans, and calendar commitments
+              together, then make free blocks count.
+            </p>
+          </div>
+        </section>
+        <section className="mb-14 flex flex-col items-start justify-between gap-6 rounded-3xl bg-[#14264A] px-7 py-9 text-white md:flex-row md:items-center md:px-10">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[.2em] text-amber-300">
+              Your ambition, made practical
+            </p>
+            <h2 className="mt-3 max-w-xl font-serif text-3xl font-bold">
+              The next meaningful step is already small enough.
+            </h2>
+          </div>
+          <Link
+            href="/sign-up"
+            className="rounded-xl bg-amber-400 px-5 py-3 font-semibold text-[#14264A]"
+            data-testid="link-final-signup"
+          >
+            Set up your space
+          </Link>
+        </section>
+      </main>
+      <footer className="border-t border-slate-200 px-6 py-6 text-center font-mono text-[10px] tracking-[.12em] text-slate-400">
+        ESTIMATED EXAM DATES · CONFIGURABLE UNTIL OFFICIAL NOTIFICATION
+      </footer>
+    </div>
+  );
 }

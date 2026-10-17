@@ -1,17 +1,81 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Send, Volume2 } from "lucide-react";
+import {
+  CalendarDays,
+  Check,
+  Mic,
+  MicOff,
+  Send,
+  Sparkles,
+  Volume2,
+  X,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetDashboardSummaryQueryKey, getGetSprintTasksQueryKey, getGetStudyLogsQueryKey, useCreateStudyLog, useGetFreeSlots, useGetSprintTasks, useUpdateSprintTask } from "@workspace/api-client-react";
-import { Panel, inputClass, primaryButton, today } from "@/lib/shared";
+import {
+  getGetCalendarEventsQueryKey,
+  getGetDashboardSummaryQueryKey,
+  getGetFreeSlotsQueryKey,
+  getGetHabitsQueryKey,
+  getGetSettingsQueryKey,
+  getGetSprintTasksQueryKey,
+  getGetStudyLogsQueryKey,
+  getGetSubjectsQueryKey,
+  getGetWorkoutLogsQueryKey,
+  useAutoScheduleSubjects,
+  useCreateCalendarEvent,
+  useCreateStudyLog,
+  useCreateWorkoutLog,
+  useGetDashboardSummary,
+  useGetFreeSlots,
+  useGetHabits,
+  useGetSettings,
+  useGetSprintTasks,
+  useSaveHabitCheckin,
+  useUpdateSprintTask,
+} from "@workspace/api-client-react";
+import { Panel, inputClass, primaryButton, dateOffset, today } from "@/lib/shared";
 
 type SpeechRecognitionResult = { transcript: string };
 type SpeechRecognitionEvent = { results: ArrayLike<ArrayLike<SpeechRecognitionResult>> };
-type SpeechRecognitionInstance = { lang: string; interimResults: boolean; continuous: boolean; onresult: ((event: SpeechRecognitionEvent) => void) | null; onerror: (() => void) | null; onend: (() => void) | null; start: () => void; stop: () => void; abort: () => void };
+type SpeechRecognitionInstance = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+};
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
 
-const SpeechWindow = window as Window & { SpeechRecognition?: SpeechRecognitionConstructor; webkitSpeechRecognition?: SpeechRecognitionConstructor };
+const SpeechWindow = window as Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
 
-export function Aira() {
+type AiraProps = { onClose?: () => void };
+
+function indiaDateFor(value: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(value));
+  return `${parts.find((part) => part.type === "year")?.value}-${parts.find((part) => part.type === "month")?.value}-${parts.find((part) => part.type === "day")?.value}`;
+}
+
+function formatIndiaTime(value: string) {
+  return new Date(value).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    weekday: "long",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function Aira({ onClose }: AiraProps) {
   const [text, setText] = useState("");
   const [listening, setListening] = useState(false);
   const [notice, setNotice] = useState("");
@@ -19,9 +83,16 @@ export function Aira() {
   const lockRef = useRef(false);
   const queryClient = useQueryClient();
   const createStudy = useCreateStudyLog();
+  const createWorkout = useCreateWorkoutLog();
+  const createCalendarEvent = useCreateCalendarEvent();
+  const saveCheckin = useSaveHabitCheckin();
+  const autoSchedule = useAutoScheduleSubjects();
   const sprint = useGetSprintTasks();
   const updateSprint = useUpdateSprintTask();
   const freeSlots = useGetFreeSlots({ days: 14 });
+  const summary = useGetDashboardSummary();
+  const settings = useGetSettings();
+  const habits = useGetHabits({ days: 30 });
   const speechSupported = Boolean(SpeechWindow.SpeechRecognition || SpeechWindow.webkitSpeechRecognition);
 
   useEffect(() => () => {
@@ -33,11 +104,18 @@ export function Aira() {
 
   const say = (message: string) => {
     setNotice(message);
-    if ("speechSynthesis" in window) {
+    if ("speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined") {
       window.speechSynthesis.cancel();
       const response = new SpeechSynthesisUtterance(message);
+      response.lang = "en-IN";
       response.rate = 0.96;
       window.speechSynthesis.speak(response);
+    }
+  };
+
+  const refresh = (...keys: unknown[]) => {
+    for (const queryKey of keys) {
+      void queryClient.invalidateQueries({ queryKey: queryKey as readonly unknown[] });
     }
   };
 
@@ -45,18 +123,130 @@ export function Aira() {
     const command = raw.trim();
     const lower = command.toLowerCase();
     if (!command) return;
+
     const studyMatch = lower.match(/(?:log|record|studied)\s+(\d+)\s*(?:minutes|min)\s+(?:of\s+)?(.+)/);
     if (studyMatch) {
-      createStudy.mutate({ data: { date: today(), durationMinutes: Number(studyMatch[1]), subject: studyMatch[2].trim(), notes: "Logged with Aira" } }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetStudyLogsQueryKey({ days: 30 }) });
-          queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
-          say(`Recorded ${studyMatch[1]} minutes for ${studyMatch[2]}.`);
+      createStudy.mutate(
+        { data: { date: today(), durationMinutes: Number(studyMatch[1]), subject: studyMatch[2].trim(), notes: "Logged with Aira" } },
+        {
+          onSuccess: () => {
+            refresh(
+              getGetStudyLogsQueryKey({ days: 30 }),
+              getGetDashboardSummaryQueryKey(),
+            );
+            say(`Recorded ${studyMatch[1]} minutes for ${studyMatch[2]}.`);
+          },
+          onError: () => say("I could not save that session. Please try again."),
         },
-        onError: () => say("I could not save that session. Please try again."),
+      );
+      return;
+    }
+
+    const workoutMatch = command.match(/^(?:i did\s+|log\s+|record\s+|add\s+)?(\d+)\s+sets?\s+(?:of\s+)?(.+)$/i);
+    if (workoutMatch) {
+      createWorkout.mutate(
+        {
+          data: {
+            date: today(),
+            exerciseName: workoutMatch[2].trim(),
+            sets: Number(workoutMatch[1]),
+            repsPerSet: 10,
+            weightPerSet: 0,
+            weightUnit: "kg",
+          },
+        },
+        {
+          onSuccess: () => {
+            refresh(getGetWorkoutLogsQueryKey({ days: 30 }));
+            say(`Logged ${workoutMatch[1]} sets of ${workoutMatch[2]}. I used 10 bodyweight reps per set; edit the details in Wellness if needed.`);
+          },
+          onError: () => say("I could not save that workout. Please try again."),
+        },
+      );
+      return;
+    }
+
+    const calendarMatch = command.match(/^(?:schedule|book|add)\s+(.+?)\s+(?:for\s+)?(today|tomorrow)(?:\s+at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i);
+    if (calendarMatch) {
+      const offset = calendarMatch[2].toLowerCase() === "tomorrow" ? 1 : 0;
+      let hour = Number(calendarMatch[3]);
+      const minute = Number(calendarMatch[4] ?? 0);
+      const meridiem = calendarMatch[5].toLowerCase();
+      if (hour < 1 || hour > 12 || minute > 59) {
+        say("Use a clock time like 4 PM or 4:30 PM.");
+        return;
+      }
+      hour = hour % 12 + (meridiem === "pm" ? 12 : 0);
+      const date = dateOffset(today(), offset);
+      const start = new Date(`${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+05:30`);
+      if (start.getTime() <= Date.now()) {
+        say("That time has already passed. Choose a future time.");
+        return;
+      }
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      createCalendarEvent.mutate(
+        {
+          data: {
+            title: calendarMatch[1].trim(),
+            start: start.toISOString(),
+            end: end.toISOString(),
+            description: "Added with Aira",
+          },
+        },
+        {
+          onSuccess: () => {
+            refresh(
+              getGetCalendarEventsQueryKey(),
+              getGetFreeSlotsQueryKey({ days: 14 }),
+            );
+            say(`Added ${calendarMatch[1].trim()} to Google Calendar for ${formatIndiaTime(start.toISOString())}.`);
+          },
+          onError: () => say("I could not add that calendar event. Check the calendar connection and try again."),
+        },
+      );
+      return;
+    }
+
+    const habitMatch = command.match(/^(?:mark|check|log)\s+(.+?)\s+(?:done|complete(?:d)?|avoided)$/i);
+    if (habitMatch) {
+      const matchedHabit = habits.data?.habits.find(
+        (habit) =>
+          habit.active &&
+          habit.name.toLowerCase().includes(habitMatch[1].trim().toLowerCase()),
+      );
+      if (!matchedHabit) {
+        say(habits.isLoading ? "Your habits are loading." : "I could not find that active habit. Check its name in Habits.");
+        return;
+      }
+      saveCheckin.mutate(
+        { data: { habitId: matchedHabit.id, date: today(), completed: true } },
+        {
+          onSuccess: () => {
+            refresh(getGetHabitsQueryKey({ days: 30 }));
+            say(matchedHabit.category === "bad"
+              ? `Marked that you avoided ${matchedHabit.name} today.`
+              : `Checked off ${matchedHabit.name} for today.`);
+          },
+          onError: () => say("I could not save that habit check-in."),
+        },
+      );
+      return;
+    }
+
+    if (lower.includes("auto-schedule") || lower.includes("schedule my subjects") || lower.includes("allocate my topics")) {
+      autoSchedule.mutate(undefined, {
+        onSuccess: (result) => {
+          refresh(
+            getGetFreeSlotsQueryKey({ days: 14 }),
+            getGetCalendarEventsQueryKey(),
+          );
+          say(result.message);
+        },
+        onError: () => say("I could not schedule the topics. Check calendar access and your subject date windows."),
       });
       return;
     }
+
     const sprintMatch = lower.match(/(?:complete|finish|done)\s+(?:day\s*)?(\d+)(?:\s+(.+))?/);
     if (sprintMatch && lower.includes("day")) {
       if (!sprint.data?.length) {
@@ -70,34 +260,59 @@ export function Aira() {
         say(`I could not find an incomplete target for day ${dayNumber}.`);
         return;
       }
-      updateSprint.mutate({ id: match.id, data: { completed: true } }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetSprintTasksQueryKey() });
-          say(`Marked ${match.title} complete for day ${dayNumber}.`);
+      updateSprint.mutate(
+        { id: match.id, data: { completed: true } },
+        {
+          onSuccess: () => {
+            refresh(getGetSprintTasksQueryKey());
+            say(`Marked ${match.title} complete for day ${dayNumber}.`);
+          },
+          onError: () => say("I could not update that sprint target. Please try again."),
         },
-        onError: () => say("I could not update that sprint target. Please try again."),
-      });
+      );
       return;
     }
+
+    if (lower.includes("daily briefing") || lower.includes("morning briefing") || lower === "brief me") {
+      if (summary.isLoading || settings.isLoading) {
+        say("Your daily briefing is loading.");
+        return;
+      }
+      if (!summary.data || !settings.data) {
+        say("I could not load your briefing. Try again in a moment.");
+        return;
+      }
+      const data = summary.data;
+      const nextSlot = freeSlots.data?.[0];
+      const slotMessage = nextSlot
+        ? ` Your next open block is ${formatIndiaTime(nextSlot.start)} for ${Math.floor(nextSlot.durationMinutes / 60)} hours and ${nextSlot.durationMinutes % 60} minutes.`
+        : " I could not find a free block in the current calendar window.";
+      say(`Today: ${data.studyMinutesToday} of ${data.studyTargetMinutes} study minutes, ${data.steps.toLocaleString("en-IN")} of ${data.stepGoal.toLocaleString("en-IN")} steps, ${data.waterMl} millilitres of water, and ${data.sleepHours ?? "no"} sleep hours logged.${slotMessage}`);
+      return;
+    }
+
     if (lower.includes("sprint")) {
       const total = sprint.data?.length ?? 0;
       const done = sprint.data?.filter((task) => task.completed).length ?? 0;
       say(sprint.isLoading ? "Your sprint is loading." : `Your sprint has ${done} of ${total} targets complete.`);
       return;
     }
-    if (lower.includes("calendar") || lower.includes("free time") || lower.includes("schedule")) {
-      const nextSlot = freeSlots.data?.[0];
+
+    if (lower.includes("calendar") || lower.includes("free time") || lower.includes("free slot") || lower.includes("available time")) {
+      const requestedDay = lower.includes("tomorrow") ? dateOffset(today(), 1) : today();
+      const slots = freeSlots.data?.filter((slot) => indiaDateFor(slot.start) === requestedDay) ?? [];
       if (freeSlots.isLoading) {
         say("Your available time is loading.");
-      } else if (nextSlot) {
-        const start = new Date(nextSlot.start).toLocaleString("en-IN", { weekday: "long", hour: "numeric", minute: "2-digit" });
-        say(`You have ${Math.floor(nextSlot.durationMinutes / 60)} hours and ${nextSlot.durationMinutes % 60} minutes free, starting ${start}.`);
+      } else if (slots.length) {
+        const slot = slots[0];
+        say(`On ${requestedDay}, you have ${Math.floor(slot.durationMinutes / 60)} hours and ${slot.durationMinutes % 60} minutes free, starting ${formatIndiaTime(slot.start)}.`);
       } else {
-        say("No free blocks were returned. Check calendar connection and day hours in Settings.");
+        say(`I found no free blocks for ${requestedDay}. Check your calendar connection and available day window in Settings.`);
       }
       return;
     }
-    say("Try: log 45 minutes of Polity, show sprint, complete day 3, or find free time.");
+
+    say("Try: log 45 minutes of Polity, log 3 sets of squats, schedule Polity for tomorrow at 4 PM, mark reading done, show sprint, find free time tomorrow, or give my daily briefing.");
   };
 
   const startListening = () => {
@@ -135,6 +350,7 @@ export function Aira() {
     } catch {
       setListening(false);
       lockRef.current = false;
+      recognitionRef.current = null;
       setNotice("Could not start the microphone. Type a command instead.");
     }
   };
@@ -148,9 +364,57 @@ export function Aira() {
     window.speechSynthesis?.cancel();
   };
 
-  return <Panel className="overflow-hidden border-blue-100 bg-[linear-gradient(120deg,#fff_45%,#eff5ff_100%)]">
-    <div className="flex items-start justify-between gap-3"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-blue-800">Aira · voice study companion</p><h2 className="mt-1 font-serif text-xl font-bold text-slate-900">Tell me what you did.</h2></div><div className={`grid h-10 w-10 place-items-center rounded-xl ${listening ? "animate-pulse bg-rose-100 text-rose-700" : "bg-blue-100 text-blue-800"}`}><Volume2 size={18}/></div></div>
-    <div className="mt-4 flex gap-2"><input value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => event.key === "Enter" && runCommand()} className={inputClass} placeholder="Try “log 45 minutes of Polity”" aria-label="Aira command" data-testid="input-aira-command"/><button className={primaryButton} onClick={() => runCommand()} disabled={createStudy.isPending || updateSprint.isPending} aria-label="Send command" data-testid="button-aira-send"><Send size={16}/></button></div>
-    <div className="mt-3 flex items-center justify-between gap-3"><button onClick={listening ? cancelListening : startListening} className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${listening ? "bg-rose-100 text-rose-800" : "bg-blue-50 text-blue-900"}`} data-testid="button-aira-microphone">{listening ? <MicOff size={15}/> : <Mic size={15}/>} {listening ? "Stop listening" : speechSupported ? "Speak a command" : "Voice unavailable"}</button><span className="text-right text-[11px] text-slate-500" data-testid="status-aira">{notice || (speechSupported ? "Voice or text commands" : "Text fallback enabled")}</span></div>
-  </Panel>;
+  const pending =
+    createStudy.isPending ||
+    createWorkout.isPending ||
+    createCalendarEvent.isPending ||
+    saveCheckin.isPending ||
+    autoSchedule.isPending ||
+    updateSprint.isPending;
+
+  return (
+    <Panel className="overflow-hidden border-blue-100 bg-[linear-gradient(120deg,#fff_45%,#eff5ff_100%)] shadow-xl shadow-blue-950/10">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2">
+          <div className="mt-0.5 rounded-lg bg-amber-50 p-2 text-amber-700"><Sparkles size={17} /></div>
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-blue-800">Aira · voice study companion</p>
+            <h2 className="mt-1 font-serif text-xl font-bold text-slate-900">What should I help with?</h2>
+          </div>
+        </div>
+        {onClose && <button onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Close Aira"><X size={17} /></button>}
+      </div>
+      <div className="mt-4 flex gap-2">
+        <input
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={(event) => event.key === "Enter" && runCommand()}
+          className={inputClass}
+          placeholder="e.g. log 45 minutes of Polity"
+          aria-label="Aira command"
+          data-testid="input-aira-command"
+        />
+        <button className={primaryButton} onClick={() => runCommand()} disabled={pending} aria-label="Send command" data-testid="button-aira-send">
+          <Send size={16} />
+        </button>
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <button onClick={listening ? cancelListening : startListening} className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${listening ? "bg-rose-100 text-rose-800" : "bg-blue-50 text-blue-900"}`} data-testid="button-aira-microphone">
+          {listening ? <MicOff size={15} /> : <Mic size={15} />}
+          {listening ? "Stop listening" : speechSupported ? "Speak a command" : "Voice unavailable"}
+        </button>
+        {pending && <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-800"><CalendarDays size={13} />Working…</span>}
+      </div>
+      <p className="mt-3 min-h-10 rounded-lg bg-white/80 px-3 py-2 text-[11px] leading-5 text-slate-600" role="status" aria-live="polite" data-testid="status-aira">
+        {notice || (speechSupported ? "Voice or text commands · microphone access stays locked to one listening session." : "Text fallback enabled · speech recognition is not available in this browser.")}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        <span className="rounded-full bg-white px-2.5 py-1 text-[9px] text-slate-500"><Check size={11} className="mr-1 inline" />study</span>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[9px] text-slate-500">workouts</span>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[9px] text-slate-500">calendar</span>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[9px] text-slate-500">habits</span>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[9px] text-slate-500">briefing</span>
+      </div>
+    </Panel>
+  );
 }

@@ -18,7 +18,12 @@
 //   export type Post = typeof postsTable.$inferSelect;
 
 export * from "./app-settings";
+export * from "./habit-checkins";
+export * from "./habits";
 export * from "./health-logs";
 export * from "./meal-logs";
 export * from "./sprint-tasks";
+export * from "./subject-modules";
+export * from "./subject-topics";
 export * from "./study-logs";
+export * from "./workout-logs";

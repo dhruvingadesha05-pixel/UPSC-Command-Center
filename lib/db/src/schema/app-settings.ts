@@ -14,6 +14,7 @@ export const appSettingsTable = pgTable("upsc_app_settings", {
   dayEndHour: integer("day_end_hour").notNull().default(22),
   spipaExamDate: text("spipa_exam_date").notNull().default("2027-05-16"),
   upscPrelimsDate: text("upsc_prelims_date").notNull().default("2028-05-28"),
+  stepGoal: integer("step_goal").notNull().default(10000),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 

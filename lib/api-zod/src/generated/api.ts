@@ -29,7 +29,9 @@ export const GetDashboardSummaryResponse = zod.object({
   "waterGoalMl": zod.number().int(),
   "sleepHours": zod.number().nullable(),
   "weightKg": zod.number().nullable(),
-  "mealCalories": zod.number().int()
+  "mealCalories": zod.number().int(),
+  "steps": zod.number().int(),
+  "stepGoal": zod.number().int()
 })
 
 
@@ -194,7 +196,8 @@ export const GetHealthLogsResponseItem = zod.object({
   "date": zod.coerce.date(),
   "weightKg": zod.number().nullable(),
   "waterMl": zod.number().int(),
-  "sleepHours": zod.number().nullable()
+  "sleepHours": zod.number().nullable(),
+  "steps": zod.number().int()
 })
 export const GetHealthLogsResponse = zod.array(GetHealthLogsResponseItem)
 
@@ -211,13 +214,17 @@ export const saveHealthLogBodyWaterMlMax = 20000;
 export const saveHealthLogBodySleepHoursMin = 0;
 export const saveHealthLogBodySleepHoursMax = 24;
 
+export const saveHealthLogBodyStepsMin = 0;
+export const saveHealthLogBodyStepsMax = 100000;
+
 
 
 export const SaveHealthLogBody = zod.object({
   "date": zod.coerce.date(),
   "weightKg": zod.number().min(saveHealthLogBodyWeightKgMin).max(saveHealthLogBodyWeightKgMax).nullish(),
   "waterMl": zod.number().int().min(saveHealthLogBodyWaterMlMin).max(saveHealthLogBodyWaterMlMax).optional(),
-  "sleepHours": zod.number().min(saveHealthLogBodySleepHoursMin).max(saveHealthLogBodySleepHoursMax).nullish()
+  "sleepHours": zod.number().min(saveHealthLogBodySleepHoursMin).max(saveHealthLogBodySleepHoursMax).nullish(),
+  "steps": zod.number().int().min(saveHealthLogBodyStepsMin).max(saveHealthLogBodyStepsMax).optional()
 })
 
 export const SaveHealthLogResponse = zod.object({
@@ -225,7 +232,8 @@ export const SaveHealthLogResponse = zod.object({
   "date": zod.coerce.date(),
   "weightKg": zod.number().nullable(),
   "waterMl": zod.number().int(),
-  "sleepHours": zod.number().nullable()
+  "sleepHours": zod.number().nullable(),
+  "steps": zod.number().int()
 })
 
 
@@ -285,6 +293,336 @@ export const DeleteMealLogResponse = zod.void()
 
 
 /**
+ * @summary List workout records
+ */
+export const getWorkoutLogsQueryDaysDefault = 7;
+export const getWorkoutLogsQueryDaysMax = 90;
+
+
+
+export const GetWorkoutLogsQueryParams = zod.object({
+  "days": zod.coerce.number().int().min(1).max(getWorkoutLogsQueryDaysMax).default(getWorkoutLogsQueryDaysDefault)
+})
+
+export const GetWorkoutLogsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "date": zod.coerce.date(),
+  "exerciseName": zod.string(),
+  "sets": zod.number().int(),
+  "repsPerSet": zod.number().int(),
+  "weightPerSet": zod.number(),
+  "weightUnit": zod.enum(['kg', 'lbs']),
+  "createdAt": zod.coerce.date()
+})
+export const GetWorkoutLogsResponse = zod.array(GetWorkoutLogsResponseItem)
+
+
+/**
+ * @summary Record a workout set block
+ */
+export const createWorkoutLogBodyExerciseNameMax = 120;
+
+export const createWorkoutLogBodySetsMax = 50;
+
+export const createWorkoutLogBodyRepsPerSetMax = 500;
+
+export const createWorkoutLogBodyWeightPerSetMin = 0;
+export const createWorkoutLogBodyWeightPerSetMax = 2000;
+
+
+
+export const CreateWorkoutLogBody = zod.object({
+  "date": zod.coerce.date(),
+  "exerciseName": zod.string().min(1).max(createWorkoutLogBodyExerciseNameMax),
+  "sets": zod.number().int().min(1).max(createWorkoutLogBodySetsMax),
+  "repsPerSet": zod.number().int().min(1).max(createWorkoutLogBodyRepsPerSetMax),
+  "weightPerSet": zod.number().min(createWorkoutLogBodyWeightPerSetMin).max(createWorkoutLogBodyWeightPerSetMax),
+  "weightUnit": zod.enum(['kg', 'lbs'])
+})
+
+export const CreateWorkoutLogResponse = zod.object({
+  "id": zod.number().int(),
+  "date": zod.coerce.date(),
+  "exerciseName": zod.string(),
+  "sets": zod.number().int(),
+  "repsPerSet": zod.number().int(),
+  "weightPerSet": zod.number(),
+  "weightUnit": zod.enum(['kg', 'lbs']),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get habits and recent daily check-ins
+ */
+export const getHabitsQueryDaysDefault = 30;
+export const getHabitsQueryDaysMax = 31;
+
+
+
+export const GetHabitsQueryParams = zod.object({
+  "days": zod.coerce.number().int().min(1).max(getHabitsQueryDaysMax).default(getHabitsQueryDaysDefault)
+})
+
+export const GetHabitsResponse = zod.object({
+  "habits": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "category": zod.enum(['good', 'bad']),
+  "description": zod.string().nullable(),
+  "active": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})),
+  "checkins": zod.array(zod.object({
+  "id": zod.number().int(),
+  "habitId": zod.number().int(),
+  "date": zod.coerce.date(),
+  "completed": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Create a good or bad habit
+ */
+export const createHabitBodyNameMax = 120;
+
+export const createHabitBodyDescriptionMax = 500;
+
+
+
+export const CreateHabitBody = zod.object({
+  "name": zod.string().min(1).max(createHabitBodyNameMax),
+  "category": zod.enum(['good', 'bad']),
+  "description": zod.string().max(createHabitBodyDescriptionMax).optional()
+})
+
+export const CreateHabitResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "category": zod.enum(['good', 'bad']),
+  "description": zod.string().nullable(),
+  "active": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Edit or archive a habit
+ */
+export const UpdateHabitParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateHabitBodyNameMax = 120;
+
+export const updateHabitBodyDescriptionMax = 500;
+
+
+
+export const UpdateHabitBody = zod.object({
+  "name": zod.string().min(1).max(updateHabitBodyNameMax).optional(),
+  "category": zod.enum(['good', 'bad']).optional(),
+  "description": zod.string().max(updateHabitBodyDescriptionMax).nullish(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateHabitResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "category": zod.enum(['good', 'bad']),
+  "description": zod.string().nullable(),
+  "active": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Save a daily habit check-in
+ */
+export const SaveHabitCheckinBody = zod.object({
+  "habitId": zod.number().int(),
+  "date": zod.coerce.date(),
+  "completed": zod.boolean()
+})
+
+export const SaveHabitCheckinResponse = zod.object({
+  "id": zod.number().int(),
+  "habitId": zod.number().int(),
+  "date": zod.coerce.date(),
+  "completed": zod.boolean()
+})
+
+
+/**
+ * @summary List long-term subject modules and topic checklists
+ */
+export const GetSubjectsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "estimatedHours": zod.number(),
+  "status": zod.enum(['planned', 'in-progress', 'complete']),
+  "topics": zod.array(zod.object({
+  "id": zod.number().int(),
+  "moduleId": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "estimatedHours": zod.number().nullable()
+}))
+})
+export const GetSubjectsResponse = zod.array(GetSubjectsResponseItem)
+
+
+/**
+ * @summary Add a future subject module
+ */
+export const createSubjectBodyTitleMax = 160;
+
+export const createSubjectBodyEstimatedHoursMax = 2000;
+
+export const createSubjectBodyTopicsItemMax = 200;
+
+export const createSubjectBodyTopicsMax = 100;
+
+
+
+export const CreateSubjectBody = zod.object({
+  "title": zod.string().min(1).max(createSubjectBodyTitleMax),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "estimatedHours": zod.number().min(1).max(createSubjectBodyEstimatedHoursMax),
+  "topics": zod.array(zod.string().min(1).max(createSubjectBodyTopicsItemMax)).max(createSubjectBodyTopicsMax).optional()
+})
+
+export const CreateSubjectResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "estimatedHours": zod.number(),
+  "status": zod.enum(['planned', 'in-progress', 'complete']),
+  "topics": zod.array(zod.object({
+  "id": zod.number().int(),
+  "moduleId": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "estimatedHours": zod.number().nullable()
+}))
+})
+
+
+/**
+ * @summary Update a subject module
+ */
+export const UpdateSubjectParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateSubjectBodyTitleMax = 160;
+
+export const updateSubjectBodyEstimatedHoursMax = 2000;
+
+
+
+export const UpdateSubjectBody = zod.object({
+  "title": zod.string().min(1).max(updateSubjectBodyTitleMax).optional(),
+  "startDate": zod.coerce.date().optional(),
+  "endDate": zod.coerce.date().optional(),
+  "estimatedHours": zod.number().min(1).max(updateSubjectBodyEstimatedHoursMax).optional(),
+  "status": zod.enum(['planned', 'in-progress', 'complete']).optional()
+})
+
+export const UpdateSubjectResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "estimatedHours": zod.number(),
+  "status": zod.enum(['planned', 'in-progress', 'complete']),
+  "topics": zod.array(zod.object({
+  "id": zod.number().int(),
+  "moduleId": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "estimatedHours": zod.number().nullable()
+}))
+})
+
+
+/**
+ * @summary Add a topic to a subject module
+ */
+export const createSubjectTopicBodyTitleMax = 200;
+
+export const createSubjectTopicBodyEstimatedHoursMin = 0.25;
+export const createSubjectTopicBodyEstimatedHoursMax = 100;
+
+
+
+export const CreateSubjectTopicBody = zod.object({
+  "moduleId": zod.number().int(),
+  "title": zod.string().min(1).max(createSubjectTopicBodyTitleMax),
+  "estimatedHours": zod.number().min(createSubjectTopicBodyEstimatedHoursMin).max(createSubjectTopicBodyEstimatedHoursMax).nullish()
+})
+
+export const CreateSubjectTopicResponse = zod.object({
+  "id": zod.number().int(),
+  "moduleId": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "estimatedHours": zod.number().nullable()
+})
+
+
+/**
+ * @summary Update or complete a topic
+ */
+export const UpdateSubjectTopicParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateSubjectTopicBodyTitleMax = 200;
+
+export const updateSubjectTopicBodyEstimatedHoursMin = 0.25;
+export const updateSubjectTopicBodyEstimatedHoursMax = 100;
+
+
+
+export const UpdateSubjectTopicBody = zod.object({
+  "title": zod.string().min(1).max(updateSubjectTopicBodyTitleMax).optional(),
+  "completed": zod.boolean().optional(),
+  "estimatedHours": zod.number().min(updateSubjectTopicBodyEstimatedHoursMin).max(updateSubjectTopicBodyEstimatedHoursMax).nullish()
+})
+
+export const UpdateSubjectTopicResponse = zod.object({
+  "id": zod.number().int(),
+  "moduleId": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "estimatedHours": zod.number().nullable()
+})
+
+
+/**
+ * @summary Allocate unassigned future topics to open Google Calendar slots
+ */
+export const AutoScheduleSubjectsResponse = zod.object({
+  "createdEvents": zod.number().int(),
+  "assignments": zod.array(zod.object({
+  "topicId": zod.number().int(),
+  "topicTitle": zod.string(),
+  "subjectTitle": zod.string(),
+  "eventId": zod.string(),
+  "start": zod.coerce.date(),
+  "end": zod.coerce.date()
+})),
+  "message": zod.string()
+})
+
+
+/**
  * @summary Get command center preferences
  */
 export const GetSettingsResponse = zod.object({
@@ -297,7 +635,8 @@ export const GetSettingsResponse = zod.object({
   "dayStartHour": zod.number().int(),
   "dayEndHour": zod.number().int(),
   "spipaExamDate": zod.coerce.date(),
-  "upscPrelimsDate": zod.coerce.date()
+  "upscPrelimsDate": zod.coerce.date(),
+  "stepGoal": zod.number().int()
 })
 
 
@@ -318,6 +657,9 @@ export const updateSettingsBodyDayStartHourMax = 23;
 
 export const updateSettingsBodyDayEndHourMax = 24;
 
+export const updateSettingsBodyStepGoalMin = 1000;
+export const updateSettingsBodyStepGoalMax = 100000;
+
 
 
 export const UpdateSettingsBody = zod.object({
@@ -330,7 +672,8 @@ export const UpdateSettingsBody = zod.object({
   "dayStartHour": zod.number().int().min(updateSettingsBodyDayStartHourMin).max(updateSettingsBodyDayStartHourMax).optional(),
   "dayEndHour": zod.number().int().min(1).max(updateSettingsBodyDayEndHourMax).optional(),
   "spipaExamDate": zod.coerce.date().optional(),
-  "upscPrelimsDate": zod.coerce.date().optional()
+  "upscPrelimsDate": zod.coerce.date().optional(),
+  "stepGoal": zod.number().int().min(updateSettingsBodyStepGoalMin).max(updateSettingsBodyStepGoalMax).optional()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -343,7 +686,8 @@ export const UpdateSettingsResponse = zod.object({
   "dayStartHour": zod.number().int(),
   "dayEndHour": zod.number().int(),
   "spipaExamDate": zod.coerce.date(),
-  "upscPrelimsDate": zod.coerce.date()
+  "upscPrelimsDate": zod.coerce.date(),
+  "stepGoal": zod.number().int()
 })
 
 

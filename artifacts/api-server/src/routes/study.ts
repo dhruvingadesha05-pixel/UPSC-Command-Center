@@ -75,14 +75,22 @@ router.get("/study-logs", async (req, res): Promise<void> => {
     .from(studyLogsTable)
     .where(and(eq(studyLogsTable.userId, userId), gte(studyLogsTable.date, fromDate)))
     .orderBy(desc(studyLogsTable.date), desc(studyLogsTable.createdAt));
+  const response = rows.map((row) => ({
+    id: row.id,
+    date: row.date,
+    subject: row.subject,
+    durationMinutes: row.durationMinutes,
+    notes: row.notes,
+    createdAt: row.createdAt.toISOString(),
+  }));
   GetStudyLogsResponse.parse(
-    rows.map((row) => ({
+    response.map((row) => ({
       ...row,
       date: new Date(`${row.date}T00:00:00.000Z`),
-      createdAt: row.createdAt,
+      createdAt: new Date(row.createdAt),
     })),
   );
-  res.json(rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() })));
+  res.json(response);
 });
 
 router.post("/study-logs", async (req, res): Promise<void> => {
@@ -101,15 +109,20 @@ router.post("/study-logs", async (req, res): Promise<void> => {
       notes: parsed.data.notes ?? null,
     })
     .returning();
-  CreateStudyLogResponse.parse({
-    ...row,
-    date: new Date(`${row.date}T00:00:00.000Z`),
-    createdAt: row.createdAt,
-  });
-  res.status(201).json({
-    ...row,
+  const response = {
+    id: row.id,
+    date: row.date,
+    subject: row.subject,
+    durationMinutes: row.durationMinutes,
+    notes: row.notes,
     createdAt: row.createdAt.toISOString(),
+  };
+  CreateStudyLogResponse.parse({
+    ...response,
+    date: new Date(`${response.date}T00:00:00.000Z`),
+    createdAt: new Date(response.createdAt),
   });
+  res.status(201).json(response);
 });
 
 router.get("/sprint-tasks", async (req, res): Promise<void> => {

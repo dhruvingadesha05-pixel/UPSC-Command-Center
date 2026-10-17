@@ -30,13 +30,21 @@ router.get("/health-logs", async (req, res): Promise<void> => {
     .from(healthLogsTable)
     .where(and(eq(healthLogsTable.userId, userId), gte(healthLogsTable.date, fromDate)))
     .orderBy(desc(healthLogsTable.date));
+  const response = rows.map((row) => ({
+    id: row.id,
+    date: row.date,
+    weightKg: row.weightKg,
+    waterMl: row.waterMl,
+    sleepHours: row.sleepHours,
+    steps: row.steps,
+  }));
   GetHealthLogsResponse.parse(
-    rows.map((row) => ({
+    response.map((row) => ({
       ...row,
       date: new Date(`${row.date}T00:00:00.000Z`),
     })),
   );
-  res.json(rows);
+  res.json(response);
 });
 
 router.post("/health-logs", async (req, res): Promise<void> => {
@@ -60,11 +68,19 @@ router.post("/health-logs", async (req, res): Promise<void> => {
       set: updateValues,
     })
     .returning();
+  const response = {
+    id: row.id,
+    date: row.date,
+    weightKg: row.weightKg,
+    waterMl: row.waterMl,
+    sleepHours: row.sleepHours,
+    steps: row.steps,
+  };
   SaveHealthLogResponse.parse({
-    ...row,
+    ...response,
     date: new Date(`${row.date}T00:00:00.000Z`),
   });
-  res.json(row);
+  res.json(response);
 });
 
 router.get("/meal-logs", async (req, res): Promise<void> => {
@@ -80,16 +96,22 @@ router.get("/meal-logs", async (req, res): Promise<void> => {
     .from(mealLogsTable)
     .where(and(eq(mealLogsTable.userId, userId), eq(mealLogsTable.date, date)))
     .orderBy(desc(mealLogsTable.createdAt));
+  const response = rows.map((row) => ({
+    id: row.id,
+    date: row.date,
+    name: row.name,
+    calories: row.calories,
+    mealType: row.mealType,
+    createdAt: row.createdAt.toISOString(),
+  }));
   GetMealLogsResponse.parse(
-    rows.map((row) => ({
+    response.map((row) => ({
       ...row,
       date: new Date(`${row.date}T00:00:00.000Z`),
-      createdAt: row.createdAt,
+      createdAt: new Date(row.createdAt),
     })),
   );
-  res.json(
-    rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() })),
-  );
+  res.json(response);
 });
 
 router.post("/meal-logs", async (req, res): Promise<void> => {
@@ -107,15 +129,20 @@ router.post("/meal-logs", async (req, res): Promise<void> => {
       userId,
     })
     .returning();
-  CreateMealLogResponse.parse({
-    ...row,
-    date: new Date(`${row.date}T00:00:00.000Z`),
-    createdAt: row.createdAt,
-  });
-  res.status(201).json({
-    ...row,
+  const response = {
+    id: row.id,
+    date: row.date,
+    name: row.name,
+    calories: row.calories,
+    mealType: row.mealType,
     createdAt: row.createdAt.toISOString(),
+  };
+  CreateMealLogResponse.parse({
+    ...response,
+    date: new Date(`${response.date}T00:00:00.000Z`),
+    createdAt: new Date(response.createdAt),
   });
+  res.status(201).json(response);
 });
 
 router.delete("/meal-logs/:id", async (req, res): Promise<void> => {

@@ -14,4 +14,5 @@ export interface HealthLog {
   waterMl: number;
   /** @nullable */
   sleepHours: number | null;
+  steps: number;
 }

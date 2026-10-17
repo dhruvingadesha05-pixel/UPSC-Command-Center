@@ -18,4 +18,6 @@ export interface DashboardSummary {
   /** @nullable */
   weightKg: number | null;
   mealCalories: number;
+  steps: number;
+  stepGoal: number;
 }

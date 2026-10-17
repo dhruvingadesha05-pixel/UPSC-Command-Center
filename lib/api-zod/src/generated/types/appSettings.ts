@@ -19,4 +19,5 @@ export interface AppSettings {
   dayEndHour: number;
   spipaExamDate: Date;
   upscPrelimsDate: Date;
+  stepGoal: number;
 }

@@ -58,6 +58,8 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     sleepHours: health?.sleepHours ?? null,
     weightKg: health?.weightKg ?? null,
     mealCalories: todayMeals.reduce((sum, row) => sum + row.calories, 0),
+    steps: health?.steps ?? 0,
+    stepGoal: settings.stepGoal,
   };
   GetDashboardSummaryResponse.parse({
     ...response,

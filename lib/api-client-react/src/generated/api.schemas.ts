@@ -21,6 +21,8 @@ export interface DashboardSummary {
   /** @nullable */
   weightKg: number | null;
   mealCalories: number;
+  steps: number;
+  stepGoal: number;
 }
 
 export interface StudyLog {
@@ -142,6 +144,7 @@ export interface HealthLog {
   waterMl: number;
   /** @nullable */
   sleepHours: number | null;
+  steps: number;
 }
 
 export interface HealthLogInput {
@@ -163,6 +166,11 @@ export interface HealthLogInput {
      * @nullable
      */
   sleepHours?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     */
+  steps?: number;
 }
 
 export type MealLogMealType = typeof MealLogMealType[keyof typeof MealLogMealType];
@@ -209,6 +217,255 @@ export interface MealLogInput {
   mealType: MealLogInputMealType;
 }
 
+export type WorkoutLogWeightUnit = typeof WorkoutLogWeightUnit[keyof typeof WorkoutLogWeightUnit];
+
+
+export const WorkoutLogWeightUnit = {
+  kg: 'kg',
+  lbs: 'lbs',
+} as const;
+
+export interface WorkoutLog {
+  id: number;
+  date: string;
+  exerciseName: string;
+  sets: number;
+  repsPerSet: number;
+  weightPerSet: number;
+  weightUnit: WorkoutLogWeightUnit;
+  createdAt: string;
+}
+
+export type WorkoutLogInputWeightUnit = typeof WorkoutLogInputWeightUnit[keyof typeof WorkoutLogInputWeightUnit];
+
+
+export const WorkoutLogInputWeightUnit = {
+  kg: 'kg',
+  lbs: 'lbs',
+} as const;
+
+export interface WorkoutLogInput {
+  date: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  exerciseName: string;
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  sets: number;
+  /**
+     * @minimum 1
+     * @maximum 500
+     */
+  repsPerSet: number;
+  /**
+     * @minimum 0
+     * @maximum 2000
+     */
+  weightPerSet: number;
+  weightUnit: WorkoutLogInputWeightUnit;
+}
+
+export type HabitCategory = typeof HabitCategory[keyof typeof HabitCategory];
+
+
+export const HabitCategory = {
+  good: 'good',
+  bad: 'bad',
+} as const;
+
+export interface Habit {
+  id: number;
+  name: string;
+  category: HabitCategory;
+  /** @nullable */
+  description: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
+export type HabitInputCategory = typeof HabitInputCategory[keyof typeof HabitInputCategory];
+
+
+export const HabitInputCategory = {
+  good: 'good',
+  bad: 'bad',
+} as const;
+
+export interface HabitInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  category: HabitInputCategory;
+  /** @maxLength 500 */
+  description?: string;
+}
+
+export type HabitUpdateCategory = typeof HabitUpdateCategory[keyof typeof HabitUpdateCategory];
+
+
+export const HabitUpdateCategory = {
+  good: 'good',
+  bad: 'bad',
+} as const;
+
+export interface HabitUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name?: string;
+  category?: HabitUpdateCategory;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  description?: string | null;
+  active?: boolean;
+}
+
+export interface HabitCheckin {
+  id: number;
+  habitId: number;
+  date: string;
+  completed: boolean;
+}
+
+export interface HabitCheckinInput {
+  habitId: number;
+  date: string;
+  completed: boolean;
+}
+
+export interface HabitDashboard {
+  habits: Habit[];
+  checkins: HabitCheckin[];
+}
+
+export interface SubjectTopic {
+  id: number;
+  moduleId: number;
+  title: string;
+  completed: boolean;
+  /** @nullable */
+  estimatedHours: number | null;
+}
+
+export type SubjectModuleStatus = typeof SubjectModuleStatus[keyof typeof SubjectModuleStatus];
+
+
+export const SubjectModuleStatus = {
+  planned: 'planned',
+  'in-progress': 'in-progress',
+  complete: 'complete',
+} as const;
+
+export interface SubjectModule {
+  id: number;
+  title: string;
+  startDate: string;
+  endDate: string;
+  estimatedHours: number;
+  status: SubjectModuleStatus;
+  topics: SubjectTopic[];
+}
+
+export interface SubjectModuleInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  startDate: string;
+  endDate: string;
+  /**
+     * @minimum 1
+     * @maximum 2000
+     */
+  estimatedHours: number;
+  /**
+     * @maxItems 100
+     * @items.minLength 1
+     * @items.maxLength 200
+     */
+  topics?: string[];
+}
+
+export type SubjectModuleUpdateStatus = typeof SubjectModuleUpdateStatus[keyof typeof SubjectModuleUpdateStatus];
+
+
+export const SubjectModuleUpdateStatus = {
+  planned: 'planned',
+  'in-progress': 'in-progress',
+  complete: 'complete',
+} as const;
+
+export interface SubjectModuleUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title?: string;
+  startDate?: string;
+  endDate?: string;
+  /**
+     * @minimum 1
+     * @maximum 2000
+     */
+  estimatedHours?: number;
+  status?: SubjectModuleUpdateStatus;
+}
+
+export interface SubjectTopicInput {
+  moduleId: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minimum 0.25
+     * @maximum 100
+     * @nullable
+     */
+  estimatedHours?: number | null;
+}
+
+export interface SubjectTopicUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  completed?: boolean;
+  /**
+     * @minimum 0.25
+     * @maximum 100
+     * @nullable
+     */
+  estimatedHours?: number | null;
+}
+
+export interface AutoScheduleAssignment {
+  topicId: number;
+  topicTitle: string;
+  subjectTitle: string;
+  eventId: string;
+  start: string;
+  end: string;
+}
+
+export interface AutoScheduleResponse {
+  createdEvents: number;
+  assignments: AutoScheduleAssignment[];
+  message: string;
+}
+
 export interface AppSettings {
   dailyStudyTargetMinutes: number;
   waterGoalMl: number;
@@ -222,6 +479,7 @@ export interface AppSettings {
   dayEndHour: number;
   spipaExamDate: string;
   upscPrelimsDate: string;
+  stepGoal: number;
 }
 
 export interface AppSettingsUpdate {
@@ -258,6 +516,11 @@ export interface AppSettingsUpdate {
   dayEndHour?: number;
   spipaExamDate?: string;
   upscPrelimsDate?: string;
+  /**
+     * @minimum 1000
+     * @maximum 100000
+     */
+  stepGoal?: number;
 }
 
 export interface NotionDatabase {
@@ -342,6 +605,22 @@ days?: number;
 
 export type GetMealLogsParams = {
 date?: string;
+};
+
+export type GetWorkoutLogsParams = {
+/**
+ * @minimum 1
+ * @maximum 90
+ */
+days?: number;
+};
+
+export type GetHabitsParams = {
+/**
+ * @minimum 1
+ * @maximum 31
+ */
+days?: number;
 };
 
 export type GetCalendarEventsParams = {

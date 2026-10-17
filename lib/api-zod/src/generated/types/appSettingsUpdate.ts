@@ -40,4 +40,9 @@ export interface AppSettingsUpdate {
   dayEndHour?: number;
   spipaExamDate?: Date;
   upscPrelimsDate?: Date;
+  /**
+     * @minimum 1000
+     * @maximum 100000
+     */
+  stepGoal?: number;
 }
