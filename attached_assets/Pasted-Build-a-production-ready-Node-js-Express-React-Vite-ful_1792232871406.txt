@@ -1,0 +1,35 @@
+Build a production-ready Node.js (Express) + React (Vite) full-stack web application for "UPSC 2028 & SPIPA 2027 Executive Command Center".
+
+### WORKSPACE & TECH STACK:
+- Backend: Express.js API server handling data, Notion SDK proxy, and schedule algorithms.
+- Frontend: React + Tailwind CSS + Lucide Icons + Recharts (Light theme: White/Slate background `#F8FAFC`, Deep UPSC Blue `#1E3A8A`, Gold `#D97706` accents).
+- Persistence: SQLite database (using Prisma or Better-SQLite3) for instant local zero-lag usage, with an sync option to Notion/Google Calendar via settings.
+
+---
+
+### CORE MODULES TO IMPLEMENT:
+
+1. WORKOUT & FITNESS SUITE (Under Wellness Tab):
+   - Daily Workout Tracker (Tuesday to Sunday structure).
+   - Log form for exercises: Exercise Name, Sets, Reps per Set, and Weight (kg/lbs) per set.
+   - Daily Step Counter widget with goal tracker (e.g., 10,000 steps).
+   - Historical weekly view showing past workout logs and step history.
+
+2. HABITS TRACKER TAB (Dedicated Tab):
+   - Habit Management: Create, edit, and categorize up to 20 good and bad habits (e.g., "Answer Writing", "8 Hours Sleep", "No Junk Food").
+   - Daily Check-in Grid: Interactive checkboxes per habit per day.
+   - Monthly Performance Graph (Recharts): Bar/Line graph showing total habits completed per day across the month to track upgrade/downgrade trends.
+
+3. DYNAMIC LONG-TERM & SUBJECT SCHEDULER (Beyond 15-Day Sprint):
+   - Sprint Mode: 15-Day Fast-Track Sprint (Oct 13 - Oct 28).
+   - Future Subject Scheduler: Dedicated planning area where users can add upcoming subject modules (e.g., GS-1 History, GS-2 Polity, CSAT, Ethics) with target start/end dates, estimated hours, and topic checklists.
+   - AI Manager Auto-Scheduling: AI can allocate study slots based on unassigned future topics.
+
+4. AI MANAGER ("Aira") AUDIO/CHAT & SLOT CALCULATOR:
+   - Floating/Side Drawer Manager Persona ("Aira").
+   - Conversational Action Engine: Chatting or speaking to Aira ("Add 2 sets of Squats", "Schedule Polity for tomorrow 4 PM", "What are my free slots tomorrow?") automatically writes to the SQLite database and logs tasks/habits/workouts without manual input.
+   - Automated Daily Briefing: Morning summary of targets and unallocated "Free Time Slots" for the day.
+   - Free Slot Finder Matrix: Scans scheduled blocks and displays available unassigned hours for meets, hobbies, or breaks.
+
+5. NOTION & GOOGLE CALENDAR PROXY ENDPOINTS (Backend Controlled):
+   - Express server proxy routes (`/api/notion`, `/api/calendar`) to bypass browser CORS blocks and sync tasks, workouts, and calendar events securely.
