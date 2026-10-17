@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-20", "web", "bash"]
 
 [deployment]
 router = "application"
@@ -24,3 +24,6 @@ timeoutMs = 20000
 [userenv.shared]
 UPSC_ALLOWED_EMAIL = "dhruvingadesha05@gmail.com"
 VITE_UPSC_ALLOWED_EMAIL = "dhruvingadesha05@gmail.com"
+
+[nix]
+channel = "stable-25_05"
