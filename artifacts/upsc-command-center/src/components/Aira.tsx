@@ -22,7 +22,9 @@ import {
   getGetWorkoutLogsQueryKey,
   useAutoScheduleSubjects,
   useCreateCalendarEvent,
+  useCreateHabit,
   useCreateStudyLog,
+  useCreateSubject,
   useCreateWorkoutLog,
   useGetDashboardSummary,
   useGetFreeSlots,
@@ -33,6 +35,11 @@ import {
   useUpdateSprintTask,
 } from "@workspace/api-client-react";
 import { Panel, inputClass, primaryButton, dateOffset, today } from "@/lib/shared";
+import {
+  parseHabitCommand,
+  parseStudyPlanCommand,
+  parseWorkoutCommand,
+} from "@/lib/aira-commands";
 
 type SpeechRecognitionResult = { transcript: string };
 type SpeechRecognitionEvent = { results: ArrayLike<ArrayLike<SpeechRecognitionResult>> };
@@ -84,6 +91,8 @@ export function Aira({ onClose }: AiraProps) {
   const queryClient = useQueryClient();
   const createStudy = useCreateStudyLog();
   const createWorkout = useCreateWorkoutLog();
+  const createHabit = useCreateHabit();
+  const createSubject = useCreateSubject();
   const createCalendarEvent = useCreateCalendarEvent();
   const saveCheckin = useSaveHabitCheckin();
   const autoSchedule = useAutoScheduleSubjects();
@@ -130,6 +139,7 @@ export function Aira({ onClose }: AiraProps) {
         { data: { date: today(), durationMinutes: Number(studyMatch[1]), subject: studyMatch[2].trim(), notes: "Logged with Aira" } },
         {
           onSuccess: () => {
+            setText("");
             refresh(
               getGetStudyLogsQueryKey({ days: 30 }),
               getGetDashboardSummaryQueryKey(),
@@ -142,25 +152,88 @@ export function Aira({ onClose }: AiraProps) {
       return;
     }
 
-    const workoutMatch = command.match(/^(?:i did\s+|log\s+|record\s+|add\s+)?(\d+)\s+sets?\s+(?:of\s+)?(.+)$/i);
-    if (workoutMatch) {
+    const workout = parseWorkoutCommand(command);
+    if (workout) {
       createWorkout.mutate(
         {
           data: {
             date: today(),
-            exerciseName: workoutMatch[2].trim(),
-            sets: Number(workoutMatch[1]),
-            repsPerSet: 10,
-            weightPerSet: 0,
-            weightUnit: "kg",
+            ...workout,
           },
         },
         {
           onSuccess: () => {
+            setText("");
             refresh(getGetWorkoutLogsQueryKey({ days: 30 }));
-            say(`Logged ${workoutMatch[1]} sets of ${workoutMatch[2]}. I used 10 bodyweight reps per set; edit the details in Wellness if needed.`);
+            say(`Logged ${workout.sets} sets of ${workout.repsPerSet} ${workout.exerciseName} at ${workout.weightPerSet} ${workout.weightUnit}.`);
           },
           onError: () => say("I could not save that workout. Please try again."),
+        },
+      );
+      return;
+    }
+
+    if (/\bworkout\b|\bsets?\b/i.test(command)) {
+      say("Include every workout detail, for example: log workout 3 sets of 10 reps of squats at 30 kg. Use bodyweight instead of a load if needed.");
+      return;
+    }
+
+    const habitToAdd = parseHabitCommand(command);
+    if (habitToAdd) {
+      if (habits.isLoading || !habits.data) {
+        say("Your habits are loading. Try again in a moment.");
+        return;
+      }
+      if (habits.data.habits.length >= 20) {
+        say("Your habit list is full. Archive a habit before adding another.");
+        return;
+      }
+      createHabit.mutate(
+        { data: habitToAdd },
+        {
+          onSuccess: () => {
+            setText("");
+            refresh(getGetHabitsQueryKey({ days: 30 }));
+            say(`Added ${habitToAdd.category === "bad" ? "avoid" : "good"} habit: ${habitToAdd.name}.`);
+          },
+          onError: () => say("I could not add that habit. Check the 20-habit limit and try again."),
+        },
+      );
+      return;
+    }
+
+    const studyPlan = parseStudyPlanCommand(command);
+    if (studyPlan) {
+      const validDate = (value: string) => {
+        const parsed = new Date(`${value}T00:00:00.000Z`);
+        return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+      };
+      if (
+        !validDate(studyPlan.startDate) ||
+        !validDate(studyPlan.endDate) ||
+        studyPlan.startDate < today() ||
+        studyPlan.endDate < studyPlan.startDate
+      ) {
+        say("Use valid dates in YYYY-MM-DD format, with a start date today or later and an end date on or after it.");
+        return;
+      }
+      createSubject.mutate(
+        {
+          data: {
+            title: studyPlan.title,
+            startDate: studyPlan.startDate,
+            endDate: studyPlan.endDate,
+            estimatedHours: studyPlan.estimatedHours,
+            topics: studyPlan.topics,
+          },
+        },
+        {
+          onSuccess: () => {
+            setText("");
+            refresh(getGetSubjectsQueryKey());
+            say(`Added ${studyPlan.kind} "${studyPlan.title}" from ${studyPlan.startDate} through ${studyPlan.endDate} to your study plan.`);
+          },
+          onError: () => say("I could not save that study plan. Check the dates and estimated hours."),
         },
       );
       return;
@@ -195,6 +268,7 @@ export function Aira({ onClose }: AiraProps) {
         },
         {
           onSuccess: () => {
+            setText("");
             refresh(
               getGetCalendarEventsQueryKey(),
               getGetFreeSlotsQueryKey({ days: 14 }),
@@ -222,6 +296,7 @@ export function Aira({ onClose }: AiraProps) {
         { data: { habitId: matchedHabit.id, date: today(), completed: true } },
         {
           onSuccess: () => {
+            setText("");
             refresh(getGetHabitsQueryKey({ days: 30 }));
             say(matchedHabit.category === "bad"
               ? `Marked that you avoided ${matchedHabit.name} today.`
@@ -312,7 +387,7 @@ export function Aira({ onClose }: AiraProps) {
       return;
     }
 
-    say("Try: log 45 minutes of Polity, log 3 sets of squats, schedule Polity for tomorrow at 4 PM, mark reading done, show sprint, find free time tomorrow, or give my daily briefing.");
+    say("Try: log 45 minutes of Polity; log workout 3 sets of 10 reps of squats at 30 kg; add habit to build reading; mark reading done; plan study module Polity from YYYY-MM-DD to YYYY-MM-DD for 20 hours; schedule Polity for tomorrow at 4 PM; show sprint; or give my daily briefing.");
   };
 
   const startListening = () => {
@@ -367,6 +442,8 @@ export function Aira({ onClose }: AiraProps) {
   const pending =
     createStudy.isPending ||
     createWorkout.isPending ||
+    createHabit.isPending ||
+    createSubject.isPending ||
     createCalendarEvent.isPending ||
     saveCheckin.isPending ||
     autoSchedule.isPending ||

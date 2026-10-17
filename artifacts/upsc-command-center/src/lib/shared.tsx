@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 
 export const today = () => {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -24,8 +24,8 @@ export const formatMinutes = (minutes: number) => `${Math.floor(minutes / 60)}h 
 
 export const daysUntil = (date: string) => Math.max(0, Math.ceil((new Date(date).getTime() - Date.now()) / 86400000));
 
-export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(25,45,81,0.04)] ${className}`}>{children}</section>;
+export function Panel({ children, className = "", ...props }: ComponentPropsWithoutRef<"section">) {
+  return <section {...props} className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(25,45,81,0.04)] ${className}`}>{children}</section>;
 }
 
 export function PageHeading({ eyebrow, title, detail }: { eyebrow: string; title: string; detail: string }) {

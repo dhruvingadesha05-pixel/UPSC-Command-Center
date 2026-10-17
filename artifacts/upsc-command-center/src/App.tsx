@@ -11,9 +11,11 @@ import { AppShell } from "@/components/AppShell";
 import { Calendar } from "@/pages/Calendar";
 import { Dashboard } from "@/pages/Dashboard";
 import { Analytics } from "@/pages/Analytics";
+import { Habits } from "@/pages/Habits";
 import { Home } from "@/pages/Home";
 import { Settings } from "@/pages/Settings";
 import { Sprint } from "@/pages/Sprint";
+import { Subjects } from "@/pages/Subjects";
 import { Wellness } from "@/pages/Wellness";
 import NotFound from "@/pages/not-found";
 
@@ -143,6 +145,8 @@ function SignInOrHome() {
     <Route path="/sprint"><Portal page={<Sprint/>}/></Route>
     <Route path="/analytics"><Portal page={<Analytics/>}/></Route>
     <Route path="/calendar"><Portal page={<Calendar/>}/></Route>
+    <Route path="/subjects"><Portal page={<Subjects/>}/></Route>
+    <Route path="/habits"><Portal page={<Habits/>}/></Route>
     <Route path="/wellness"><Portal page={<Wellness/>}/></Route>
     <Route path="/settings"><Portal page={<Settings/>}/></Route>
     <Route component={NotFound}/>

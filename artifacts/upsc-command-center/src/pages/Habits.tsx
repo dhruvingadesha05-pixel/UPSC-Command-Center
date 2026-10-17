@@ -54,12 +54,16 @@ export function Habits() {
 
   const habits = query.data.habits;
   const activeHabits = habits.filter((habit) => habit.active);
+  const activeHabitIds = new Set(activeHabits.map((habit) => habit.id));
   const chartData = Array.from({ length: 30 }, (_, index) => {
     const date = dateOffset(today(), index - 29);
     return {
       date: date.slice(5),
       completed: query.data.checkins.filter(
-        (checkin) => checkin.date === date && checkin.completed,
+        (checkin) =>
+          checkin.date === date &&
+          checkin.completed &&
+          activeHabitIds.has(checkin.habitId),
       ).length,
     };
   });
