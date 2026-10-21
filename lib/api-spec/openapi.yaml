@@ -152,7 +152,7 @@ paths:
     get:
       operationId: getHealthLogs
       tags: [wellness]
-      summary: List recent daily health records
+      summary: List recent daily health records, or the record for one date
       parameters:
         - name: days
           in: query
@@ -161,6 +161,12 @@ paths:
             minimum: 1
             maximum: 365
             default: 30
+        - name: date
+          in: query
+          description: When set, returns only that day's record (empty array if none). Overrides `days`.
+          schema:
+            type: string
+            format: date
       responses:
         "200":
           description: Daily health records
@@ -173,7 +179,7 @@ paths:
     post:
       operationId: saveHealthLog
       tags: [wellness]
-      summary: Save or update today's health record
+      summary: Save or update the health record for any date (upsert by date)
       requestBody:
         required: true
         content:
@@ -225,6 +231,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/MealLog"
   /meal-logs/{id}:
+    put:
+      operationId: updateMealLog
+      tags: [wellness]
+      summary: Edit a meal record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MealLogInput"
+      responses:
+        "200":
+          description: Meal updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealLog"
+        "404":
+          description: Meal not found
     delete:
       operationId: deleteMealLog
       tags: [wellness]
@@ -728,12 +759,13 @@ components:
         steps: { type: integer, minimum: 0, maximum: 100000 }
     MealLog:
       type: object
-      required: [id, date, name, calories, mealType, createdAt]
+      required: [id, date, name, calories, proteinG, mealType, createdAt]
       properties:
         id: { type: integer }
         date: { type: string, format: date }
         name: { type: string }
         calories: { type: integer }
+        proteinG: { type: integer }
         mealType: { type: string, enum: [breakfast, lunch, dinner, snack] }
         createdAt: { type: string, format: date-time }
     MealLogInput:
@@ -743,6 +775,7 @@ components:
         date: { type: string, format: date }
         name: { type: string, minLength: 1, maxLength: 120 }
         calories: { type: integer, minimum: 0, maximum: 10000 }
+        proteinG: { type: integer, minimum: 0, maximum: 1000, default: 0 }
         mealType: { type: string, enum: [breakfast, lunch, dinner, snack] }
     WorkoutLog:
       type: object

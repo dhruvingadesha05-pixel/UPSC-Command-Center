@@ -688,7 +688,7 @@ export const getGetHealthLogsUrl = (params?: GetHealthLogsParams,) => {
 }
 
 /**
- * @summary List recent daily health records
+ * @summary List recent daily health records, or the record for one date
  */
 export const getHealthLogs = async (params?: GetHealthLogsParams, options?: Parameters<typeof customFetch>[1]): Promise<HealthLog[]> => {
 
@@ -735,7 +735,7 @@ export type GetHealthLogsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List recent daily health records
+ * @summary List recent daily health records, or the record for one date
  */
 
 export function useGetHealthLogs<TData = Awaited<ReturnType<typeof getHealthLogs>>, TError = ErrorType<unknown>>(
@@ -765,7 +765,7 @@ export const getSaveHealthLogUrl = () => {
 }
 
 /**
- * @summary Save or update today's health record
+ * @summary Save or update the health record for any date (upsert by date)
  */
 export const saveHealthLog = async (healthLogInput: HealthLogInput, options?: Parameters<typeof customFetch>[1]): Promise<HealthLog> => {
 
@@ -831,7 +831,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type SaveHealthLogMutationVariables = {data: BodyType<HealthLogInput>}
 
     /**
- * @summary Save or update today's health record
+ * @summary Save or update the health record for any date (upsert by date)
  */
 export const useSaveHealthLog = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveHealthLog>>, TError,SaveHealthLogMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1014,6 +1014,95 @@ export const useCreateMealLog = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateMealLogMutationOptions(options));
+    }
+
+export const getUpdateMealLogUrl = (id: number,) => {
+
+
+
+
+  return `/api/meal-logs/${id}`
+}
+
+/**
+ * @summary Edit a meal record
+ */
+export const updateMealLog = async (id: number,
+    mealLogInput: MealLogInput, options?: Parameters<typeof customFetch>[1]): Promise<MealLog> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MealLog>(getUpdateMealLogUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mealLogInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateMealLogMutationKey = () => ['updateMealLog'] as const;
+
+export const getUpdateMealLogMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMealLog>>, TError,UpdateMealLogMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMealLog>>, TError,UpdateMealLogMutationVariables, TContext> => {
+
+const mutationKey = getUpdateMealLogMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMealLog>>, UpdateMealLogMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMealLog(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMealLogMutationResult = NonNullable<Awaited<ReturnType<typeof updateMealLog>>>
+    export type UpdateMealLogMutationBody = BodyType<MealLogInput>
+    export type UpdateMealLogMutationError = ErrorType<void>
+    export type UpdateMealLogMutationVariables = {id: number;data: BodyType<MealLogInput>}
+
+    /**
+ * @summary Edit a meal record
+ */
+export const useUpdateMealLog = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMealLog>>, TError,UpdateMealLogMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMealLog>>,
+        TError,
+        UpdateMealLogMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateMealLogMutationOptions(options));
     }
 
 export const getDeleteMealLogUrl = (id: number,) => {

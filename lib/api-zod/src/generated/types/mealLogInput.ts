@@ -19,5 +19,10 @@ export interface MealLogInput {
      * @maximum 10000
      */
   calories: number;
+  /**
+     * @minimum 0
+     * @maximum 1000
+     */
+  proteinG?: number;
   mealType: MealLogInputMealType;
 }

@@ -180,7 +180,7 @@ export const UpdateSprintTaskResponse = zod.object({
 
 
 /**
- * @summary List recent daily health records
+ * @summary List recent daily health records, or the record for one date
  */
 export const getHealthLogsQueryDaysDefault = 30;
 export const getHealthLogsQueryDaysMax = 365;
@@ -188,7 +188,8 @@ export const getHealthLogsQueryDaysMax = 365;
 
 
 export const GetHealthLogsQueryParams = zod.object({
-  "days": zod.coerce.number().int().min(1).max(getHealthLogsQueryDaysMax).default(getHealthLogsQueryDaysDefault)
+  "days": zod.coerce.number().int().min(1).max(getHealthLogsQueryDaysMax).default(getHealthLogsQueryDaysDefault),
+  "date": zod.coerce.date().optional().describe('When set, returns only that day\'s record (empty array if none). Overrides `days`.')
 })
 
 export const GetHealthLogsResponseItem = zod.object({
@@ -203,7 +204,7 @@ export const GetHealthLogsResponse = zod.array(GetHealthLogsResponseItem)
 
 
 /**
- * @summary Save or update today's health record
+ * @summary Save or update the health record for any date (upsert by date)
  */
 export const saveHealthLogBodyWeightKgMin = 20;
 export const saveHealthLogBodyWeightKgMax = 400;
@@ -241,7 +242,7 @@ export const SaveHealthLogResponse = zod.object({
  * @summary List meals for a date
  */
 export const GetMealLogsQueryParams = zod.object({
-  "date": zod.date().optional()
+  "date": zod.coerce.date().optional()
 })
 
 export const GetMealLogsResponseItem = zod.object({
@@ -249,6 +250,7 @@ export const GetMealLogsResponseItem = zod.object({
   "date": zod.coerce.date(),
   "name": zod.string(),
   "calories": zod.number().int(),
+  "proteinG": zod.number().int(),
   "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack']),
   "createdAt": zod.coerce.date()
 })
@@ -263,12 +265,17 @@ export const createMealLogBodyNameMax = 120;
 export const createMealLogBodyCaloriesMin = 0;
 export const createMealLogBodyCaloriesMax = 10000;
 
+export const createMealLogBodyProteinGDefault = 0;
+export const createMealLogBodyProteinGMin = 0;
+export const createMealLogBodyProteinGMax = 1000;
+
 
 
 export const CreateMealLogBody = zod.object({
   "date": zod.coerce.date(),
   "name": zod.string().min(1).max(createMealLogBodyNameMax),
   "calories": zod.number().int().min(createMealLogBodyCaloriesMin).max(createMealLogBodyCaloriesMax),
+  "proteinG": zod.number().int().min(createMealLogBodyProteinGMin).max(createMealLogBodyProteinGMax).default(createMealLogBodyProteinGDefault),
   "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack'])
 })
 
@@ -277,6 +284,44 @@ export const CreateMealLogResponse = zod.object({
   "date": zod.coerce.date(),
   "name": zod.string(),
   "calories": zod.number().int(),
+  "proteinG": zod.number().int(),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Edit a meal record
+ */
+export const UpdateMealLogParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateMealLogBodyNameMax = 120;
+
+export const updateMealLogBodyCaloriesMin = 0;
+export const updateMealLogBodyCaloriesMax = 10000;
+
+export const updateMealLogBodyProteinGDefault = 0;
+export const updateMealLogBodyProteinGMin = 0;
+export const updateMealLogBodyProteinGMax = 1000;
+
+
+
+export const UpdateMealLogBody = zod.object({
+  "date": zod.coerce.date(),
+  "name": zod.string().min(1).max(updateMealLogBodyNameMax),
+  "calories": zod.number().int().min(updateMealLogBodyCaloriesMin).max(updateMealLogBodyCaloriesMax),
+  "proteinG": zod.number().int().min(updateMealLogBodyProteinGMin).max(updateMealLogBodyProteinGMax).default(updateMealLogBodyProteinGDefault),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack'])
+})
+
+export const UpdateMealLogResponse = zod.object({
+  "id": zod.number().int(),
+  "date": zod.coerce.date(),
+  "name": zod.string(),
+  "calories": zod.number().int(),
+  "proteinG": zod.number().int(),
   "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack']),
   "createdAt": zod.coerce.date()
 })

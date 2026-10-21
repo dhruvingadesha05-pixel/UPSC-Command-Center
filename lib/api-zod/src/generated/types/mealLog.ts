@@ -12,6 +12,7 @@ export interface MealLog {
   date: Date;
   name: string;
   calories: number;
+  proteinG: number;
   mealType: MealLogMealType;
   createdAt: Date;
 }

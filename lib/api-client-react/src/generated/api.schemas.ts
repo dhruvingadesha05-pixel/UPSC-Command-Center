@@ -188,6 +188,7 @@ export interface MealLog {
   date: string;
   name: string;
   calories: number;
+  proteinG: number;
   mealType: MealLogMealType;
   createdAt: string;
 }
@@ -214,6 +215,11 @@ export interface MealLogInput {
      * @maximum 10000
      */
   calories: number;
+  /**
+     * @minimum 0
+     * @maximum 1000
+     */
+  proteinG?: number;
   mealType: MealLogInputMealType;
 }
 
@@ -601,6 +607,10 @@ export type GetHealthLogsParams = {
  * @maximum 365
  */
 days?: number;
+/**
+ * When set, returns only that day's record (empty array if none). Overrides `days`.
+ */
+date?: string;
 };
 
 export type GetMealLogsParams = {

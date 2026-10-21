@@ -2,28 +2,25 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetDashboardSummaryQueryKey,
   getGetHealthLogsQueryKey,
-  getGetMealLogsQueryKey,
   getGetWorkoutLogsQueryKey,
-  useCreateMealLog,
   useCreateWorkoutLog,
-  useDeleteMealLog,
   useGetHealthLogs,
   useGetMealLogs,
   useGetSettings,
   useGetWorkoutLogs,
   useSaveHealthLog,
-  type MealLog,
 } from "@workspace/api-client-react";
 import {
   Apple,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Dumbbell,
   Footprints,
   GlassWater,
   HeartPulse,
   Moon,
   Plus,
-  Scale,
-  Trash2,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import {
@@ -37,6 +34,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { MealsPanel } from "@/components/MealsPanel";
 import {
   EmptyState,
   ErrorState,
@@ -59,36 +57,46 @@ const weeklyStructure = [
 ];
 
 export function Wellness() {
+  const [selectedDate, setSelectedDate] = useState(today);
+  const isToday = selectedDate === today();
+  const dayLabel = isToday ? "today" : selectedDate;
   const health = useGetHealthLogs({ days: 30 });
-  const meals = useGetMealLogs({ date: today() });
+  const dayHealth = useGetHealthLogs({ date: selectedDate });
+  const meals = useGetMealLogs({ date: selectedDate });
   const workouts = useGetWorkoutLogs({ days: 30 });
   const settings = useGetSettings();
   const saveHealth = useSaveHealthLog();
-  const addMeal = useCreateMealLog();
-  const deleteMeal = useDeleteMealLog();
   const addWorkout = useCreateWorkoutLog();
   const client = useQueryClient();
   const [weight, setWeight] = useState("");
   const [water, setWater] = useState("");
   const [sleep, setSleep] = useState("");
   const [steps, setSteps] = useState("");
-  const [mealName, setMealName] = useState("");
-  const [calories, setCalories] = useState("");
-  const [mealType, setMealType] = useState<MealLog["mealType"]>("breakfast");
   const [exerciseName, setExerciseName] = useState("");
   const [sets, setSets] = useState("3");
   const [reps, setReps] = useState("10");
   const [workoutWeight, setWorkoutWeight] = useState("0");
   const [workoutUnit, setWorkoutUnit] = useState<"kg" | "lbs">("kg");
 
-  if (health.isLoading || meals.isLoading || workouts.isLoading || settings.isLoading) {
+  // Switching days clears any half-typed values so they can't be saved onto the wrong date.
+  const changeDate = (next: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(next) || next === selectedDate) return;
+    setSelectedDate(next > today() ? today() : next);
+    setWeight("");
+    setWater("");
+    setSleep("");
+    setSteps("");
+  };
+
+  if (health.isLoading || workouts.isLoading || settings.isLoading) {
     return <LoadingState label="Loading wellness records" />;
   }
-  if (health.isError || meals.isError || workouts.isError || settings.isError) {
+  if (health.isError || dayHealth.isError || meals.isError || workouts.isError || settings.isError) {
     return (
       <ErrorState
         retry={() => {
           void health.refetch();
+          void dayHealth.refetch();
           void meals.refetch();
           void workouts.refetch();
           void settings.refetch();
@@ -97,13 +105,14 @@ export function Wellness() {
     );
   }
 
-  const todayLog = health.data?.find((item) => item.date === today());
-  const waterValue = Number(water || todayLog?.waterMl || 0);
-  const stepsValue = Number(steps || todayLog?.steps || 0);
+  const dayLog = dayHealth.data?.[0];
+  const waterValue = water !== "" ? Number(water) : dayLog?.waterMl ?? 0;
+  const stepsValue = steps !== "" ? Number(steps) : dayLog?.steps ?? 0;
   const goalWater = settings.data?.waterGoalMl ?? 2500;
   const goalSleep = settings.data?.sleepGoalHours ?? 8;
   const goalSteps = settings.data?.stepGoal ?? 10000;
   const mealTotal = meals.data?.reduce((sum, item) => sum + item.calories, 0) ?? 0;
+  const proteinTotal = meals.data?.reduce((sum, item) => sum + item.proteinG, 0) ?? 0;
   const weightChart = (health.data ?? [])
     .filter((item) => item.weightKg !== null)
     .slice(0, 14)
@@ -130,10 +139,10 @@ export function Wellness() {
     saveHealth.mutate(
       {
         data: {
-          date: today(),
-          weightKg: weight ? Number(weight) : todayLog?.weightKg ?? undefined,
+          date: selectedDate,
+          weightKg: weight ? Number(weight) : dayLog?.weightKg ?? undefined,
           waterMl: waterValue,
-          sleepHours: sleep ? Number(sleep) : todayLog?.sleepHours ?? undefined,
+          sleepHours: sleep ? Number(sleep) : dayLog?.sleepHours ?? undefined,
           steps: stepsValue,
         },
       },
@@ -144,21 +153,7 @@ export function Wellness() {
           setSleep("");
           setSteps("");
           client.invalidateQueries({ queryKey: getGetHealthLogsQueryKey({ days: 30 }) });
-          client.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
-        },
-      },
-    );
-  };
-
-  const submitMeal = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    addMeal.mutate(
-      { data: { date: today(), name: mealName.trim(), calories: Number(calories), mealType } },
-      {
-        onSuccess: () => {
-          setMealName("");
-          setCalories("");
-          client.invalidateQueries({ queryKey: getGetMealLogsQueryKey({ date: today() }) });
+          client.invalidateQueries({ queryKey: getGetHealthLogsQueryKey({ date: selectedDate }) });
           client.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
         },
       },
@@ -187,12 +182,6 @@ export function Wellness() {
     );
   };
 
-  const removeMeal = (id: number) =>
-    deleteMeal.mutate(
-      { id },
-      { onSuccess: () => client.invalidateQueries({ queryKey: getGetMealLogsQueryKey({ date: today() }) }) },
-    );
-
   return (
     <div className="fade-up">
       <PageHeading
@@ -201,10 +190,26 @@ export function Wellness() {
         detail="Track activity, weight, water, sleep, and meals alongside study work. Your records stay private to this workspace."
       />
 
+      <Panel className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays size={18} className="text-blue-800" />
+          <div>
+            <p className="text-xs font-semibold text-slate-600">Logging for</p>
+            <p className="text-[11px] text-slate-500">{isToday ? "Today" : "Past date — backfill or edit freely"}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50" aria-label="Previous day" onClick={() => changeDate(dateOffset(selectedDate, -1))} data-testid="button-date-prev"><ChevronLeft size={16} /></button>
+          <input className={`${inputClass} w-auto`} type="date" max={today()} value={selectedDate} onChange={(event) => changeDate(event.target.value)} aria-label="Wellness date" data-testid="input-wellness-date" />
+          <button type="button" className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 disabled:opacity-40" aria-label="Next day" disabled={isToday} onClick={() => changeDate(dateOffset(selectedDate, 1))} data-testid="button-date-next"><ChevronRight size={16} /></button>
+          {!isToday && <button type="button" className="rounded-lg border border-blue-100 px-3 py-2 text-xs font-semibold text-blue-900" onClick={() => changeDate(today())} data-testid="button-date-today">Today</button>}
+        </div>
+      </Panel>
+
       <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Panel>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-500">Water today</p>
+            <p className="text-xs text-slate-500">Water {dayLabel}</p>
             <GlassWater size={17} className="text-teal-700" />
           </div>
           <p className="mt-2 font-serif text-3xl font-extrabold text-slate-900" data-testid="value-wellness-water">
@@ -217,7 +222,7 @@ export function Wellness() {
         </Panel>
         <Panel>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-500">Steps today</p>
+            <p className="text-xs text-slate-500">Steps {dayLabel}</p>
             <Footprints size={17} className="text-emerald-700" />
           </div>
           <p className="mt-2 font-serif text-3xl font-extrabold text-slate-900" data-testid="value-wellness-steps">
@@ -230,23 +235,23 @@ export function Wellness() {
         </Panel>
         <Panel>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-500">Sleep last logged</p>
+            <p className="text-xs text-slate-500">Sleep {isToday ? "last logged" : dayLabel}</p>
             <Moon size={17} className="text-indigo-700" />
           </div>
           <p className="mt-2 font-serif text-3xl font-extrabold text-slate-900" data-testid="value-wellness-sleep">
-            {todayLog?.sleepHours ?? "—"}<span className="ml-1 text-sm">hrs</span>
+            {dayLog?.sleepHours ?? "—"}<span className="ml-1 text-sm">hrs</span>
           </p>
           <p className="mt-2 text-xs text-slate-500">Goal {goalSleep} hours</p>
         </Panel>
         <Panel>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-500">Meal calories today</p>
+            <p className="text-xs text-slate-500">Meal calories {dayLabel}</p>
             <Apple size={17} className="text-amber-700" />
           </div>
           <p className="mt-2 font-serif text-3xl font-extrabold text-slate-900" data-testid="value-wellness-calories">
             {mealTotal}<span className="ml-1 text-sm">kcal</span>
           </p>
-          <p className="mt-2 text-xs text-slate-500">{meals.data?.length ?? 0} meals logged</p>
+          <p className="mt-2 text-xs text-slate-500">{meals.data?.length ?? 0} meals · {proteinTotal} g protein</p>
         </Panel>
       </div>
 
@@ -256,33 +261,33 @@ export function Wellness() {
             <HeartPulse className="text-rose-700" size={19} />
             <div>
               <h2 className="font-serif text-xl font-bold">Daily health log</h2>
-              <p className="text-xs text-slate-500">Save today's movement and recovery.</p>
+              <p className="text-xs text-slate-500">Save movement and recovery for {dayLabel}.</p>
             </div>
           </div>
           <form onSubmit={saveVitals} className="mt-5 space-y-4">
             <label className="block text-xs font-semibold text-slate-600">
               Weight in kg
-              <input className={`${inputClass} mt-1`} type="number" min="20" max="400" step="0.1" placeholder={todayLog?.weightKg ? String(todayLog.weightKg) : "e.g. 68.4"} value={weight} onChange={(event) => setWeight(event.target.value)} data-testid="input-health-weight" />
+              <input className={`${inputClass} mt-1`} type="number" min="20" max="400" step="0.1" placeholder={dayLog?.weightKg ? String(dayLog.weightKg) : "e.g. 68.4"} value={weight} onChange={(event) => setWeight(event.target.value)} data-testid="input-health-weight" />
             </label>
             <label className="block text-xs font-semibold text-slate-600">
               Water in ml
-              <input className={`${inputClass} mt-1`} type="number" min="0" max="20000" step="100" placeholder={String(todayLog?.waterMl ?? 0)} value={water} onChange={(event) => setWater(event.target.value)} data-testid="input-health-water" />
+              <input className={`${inputClass} mt-1`} type="number" min="0" max="20000" step="100" placeholder={String(dayLog?.waterMl ?? 0)} value={water} onChange={(event) => setWater(event.target.value)} data-testid="input-health-water" />
             </label>
             <div className="flex gap-2">
               <button type="button" className="rounded-lg border border-teal-100 px-3 py-1.5 text-xs font-semibold text-teal-800" onClick={() => setWater(String(waterValue + 250))}>+250 ml</button>
               <button type="button" className="rounded-lg border border-teal-100 px-3 py-1.5 text-xs font-semibold text-teal-800" onClick={() => setWater(String(waterValue + 500))}>+500 ml</button>
             </div>
             <label className="block text-xs font-semibold text-slate-600">
-              Steps today
-              <input className={`${inputClass} mt-1`} type="number" min="0" max="100000" step="100" placeholder={String(todayLog?.steps ?? 0)} value={steps} onChange={(event) => setSteps(event.target.value)} data-testid="input-health-steps" />
+              Steps
+              <input className={`${inputClass} mt-1`} type="number" min="0" max="100000" step="100" placeholder={String(dayLog?.steps ?? 0)} value={steps} onChange={(event) => setSteps(event.target.value)} data-testid="input-health-steps" />
             </label>
             <button type="button" className="rounded-lg border border-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800" onClick={() => setSteps(String(stepsValue + 1000))}>+1,000 steps</button>
             <label className="block text-xs font-semibold text-slate-600">
               Sleep in hours
-              <input className={`${inputClass} mt-1`} type="number" min="0" max="24" step="0.25" placeholder={todayLog?.sleepHours ? String(todayLog.sleepHours) : "e.g. 7.5"} value={sleep} onChange={(event) => setSleep(event.target.value)} data-testid="input-health-sleep" />
+              <input className={`${inputClass} mt-1`} type="number" min="0" max="24" step="0.25" placeholder={dayLog?.sleepHours ? String(dayLog.sleepHours) : "e.g. 7.5"} value={sleep} onChange={(event) => setSleep(event.target.value)} data-testid="input-health-sleep" />
             </label>
-            <button className={`${primaryButton} w-full`} disabled={saveHealth.isPending} data-testid="button-save-health">
-              {saveHealth.isPending ? "Saving…" : "Save today's health log"}
+            <button className={`${primaryButton} w-full`} disabled={saveHealth.isPending || dayHealth.isLoading} data-testid="button-save-health">
+              {saveHealth.isPending ? "Saving…" : isToday ? "Save today's health log" : `Save health log for ${selectedDate}`}
             </button>
           </form>
           {saveHealth.isError && <p className="mt-2 text-xs text-rose-700">Could not save. Check values and retry.</p>}
@@ -402,35 +407,7 @@ export function Wellness() {
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[.9fr_1.1fr]">
-        <Panel>
-          <div className="flex items-center gap-2">
-            <Apple size={18} className="text-amber-700" />
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[.15em] text-slate-400">Food journal</p>
-              <h2 className="font-serif text-xl font-bold">Meals today</h2>
-            </div>
-          </div>
-          <form onSubmit={submitMeal} className="mt-4 grid gap-2 sm:grid-cols-[1fr_100px_130px_auto]">
-            <input className={inputClass} placeholder="Meal or snack" value={mealName} onChange={(event) => setMealName(event.target.value)} required data-testid="input-meal-name" />
-            <input className={inputClass} type="number" min="0" max="10000" placeholder="kcal" value={calories} onChange={(event) => setCalories(event.target.value)} required data-testid="input-meal-calories" />
-            <select className={inputClass} value={mealType} onChange={(event) => setMealType(event.target.value as MealLog["mealType"])} aria-label="Meal type" data-testid="select-meal-type">
-              <option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option><option value="snack">Snack</option>
-            </select>
-            <button className={`${primaryButton} px-3`} disabled={addMeal.isPending} aria-label="Add meal" data-testid="button-add-meal"><Plus size={16} /></button>
-          </form>
-          {!meals.data?.length ? (
-            <div className="mt-4"><EmptyState title="No meals logged yet." detail="Add your first meal or snack above." /></div>
-          ) : (
-            <div className="mt-4 divide-y divide-slate-100">
-              {meals.data.map((meal) => (
-                <div key={meal.id} className="flex items-center justify-between gap-3 py-3" data-testid={`row-meal-${meal.id}`}>
-                  <div><p className="text-sm font-semibold text-slate-800">{meal.name}</p><p className="mt-1 text-xs capitalize text-slate-500">{meal.mealType} · {meal.calories} kcal</p></div>
-                  <button onClick={() => removeMeal(meal.id)} disabled={deleteMeal.isPending} className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700" aria-label={`Delete ${meal.name}`} data-testid={`button-delete-meal-${meal.id}`}><Trash2 size={15} /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </Panel>
+        <MealsPanel key={selectedDate} date={selectedDate} />
         <Panel>
           <p className="font-mono text-[10px] uppercase tracking-[.15em] text-slate-400">Recent activity</p>
           <h2 className="mt-1 font-serif text-xl font-bold">Workout log</h2>
@@ -453,10 +430,10 @@ export function Wellness() {
         <p className="font-mono text-[10px] uppercase tracking-[.15em] text-slate-400">Recent daily records</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {health.data?.slice(0, 8).map((item) => (
-            <div key={item.id} className="rounded-xl bg-slate-50 px-3 py-3" data-testid={`row-health-${item.id}`}>
+            <button type="button" key={item.id} onClick={() => changeDate(item.date)} className="rounded-xl bg-slate-50 px-3 py-3 text-left hover:bg-blue-50" data-testid={`row-health-${item.id}`}>
               <p className="text-xs font-semibold text-slate-700">{item.date}</p>
               <p className="mt-1 text-[11px] text-slate-500">{item.weightKg ?? "—"} kg · {item.waterMl} ml · {item.sleepHours ?? "—"} hrs · {item.steps.toLocaleString("en-IN")} steps</p>
-            </div>
+            </button>
           ))}
         </div>
       </Panel>

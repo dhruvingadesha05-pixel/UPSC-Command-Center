@@ -12,4 +12,8 @@ export type GetHealthLogsParams = {
  * @maximum 365
  */
 days?: number;
+/**
+ * When set, returns only that day's record (empty array if none). Overrides `days`.
+ */
+date?: Date;
 };
